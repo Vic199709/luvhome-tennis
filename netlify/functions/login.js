@@ -10,7 +10,7 @@ exports.handler = async function(event) {
   try {
 
     const query =
-      '手機號碼 = "' + phone + '" and 是否有效 = "Y"';
+      '手機號碼 = "' + phone + '"';
 
     const url =
       DOMAIN +
