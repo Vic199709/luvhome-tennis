@@ -4,8 +4,8 @@ exports.handler = async function(event) {
   const MEMBER_APP_ID = '178';
   const MATCH_APP_ID = '170';
 
-  const APP178_API_TOKEN = '貼上App178的API_TOKEN';
-  const APP170_API_TOKEN = '貼上App170的API_TOKEN';
+  const APP178_API_TOKEN = 'kRuyhs6vF5Z9cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
+const APP170_API_TOKEN = '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
 
   const phone = event.queryStringParameters.phone || '';
 
