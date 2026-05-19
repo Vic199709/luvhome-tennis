@@ -8,20 +8,20 @@
 <style>
 body{
   margin:0;
-  background:#f5f7fb;
+  background:#f3f6fb;
   font-family:"Microsoft JhengHei", Arial, sans-serif;
-  color:#222;
+  color:#122033;
 }
 
 .container{
-  max-width:480px;
+  max-width:520px;
   margin:auto;
-  padding:22px;
+  padding:18px;
 }
 
 .card{
   background:#fff;
-  border-radius:20px;
+  border-radius:22px;
   padding:22px;
   margin-bottom:18px;
   box-shadow:0 8px 24px rgba(0,0,0,.08);
@@ -29,8 +29,8 @@ body{
 
 .title{
   font-size:30px;
-  font-weight:700;
-  margin-bottom:20px;
+  font-weight:800;
+  margin-bottom:18px;
 }
 
 .input{
@@ -38,7 +38,7 @@ body{
   padding:16px;
   font-size:20px;
   border:1px solid #ddd;
-  border-radius:12px;
+  border-radius:14px;
   box-sizing:border-box;
   margin-bottom:16px;
 }
@@ -50,45 +50,120 @@ body{
   border-radius:14px;
   background:#1f73e0;
   color:#fff;
-  font-size:20px;
+  font-size:19px;
   font-weight:bold;
   cursor:pointer;
-  margin-top:8px;
+  margin-top:10px;
 }
 
 .logout-btn{
-  background:#ef5350;
+  background:#ef4f4f;
 }
 
-.sub-btn{
-  background:#455a64;
+.dark-btn{
+  background:#374f5a;
 }
 
 .team-btn{
   background:#fff;
-  color:#222;
+  color:#122033;
   border:1px solid #ddd;
   box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
 .info{
-  font-size:21px;
-  margin-bottom:12px;
-  line-height:1.7;
+  font-size:19px;
+  margin:10px 0;
+  line-height:1.6;
 }
 
-.stat-grid{
+.section-wrap{
   display:grid;
   grid-template-columns:1fr;
+  gap:16px;
+  margin-top:16px;
+}
+
+.panel{
+  border-radius:18px;
+  padding:18px;
+  border:1px solid #ddd;
+}
+
+.team-panel{
+  background:#f0fff5;
+  border-color:#9adfb2;
+}
+
+.league-panel{
+  background:#fff8ed;
+  border-color:#ffc47a;
+}
+
+.panel-title{
+  font-size:22px;
+  font-weight:800;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:3px solid;
+}
+
+.team-panel .panel-title{
+  border-color:#159447;
+  color:#0f7d3a;
+}
+
+.league-panel .panel-title{
+  border-color:#ff7a00;
+  color:#df5f00;
+}
+
+.main-team{
+  text-align:center;
+  font-size:34px;
+  font-weight:900;
+  color:#0f7d3a;
+  margin:12px 0 18px;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
   gap:12px;
 }
 
-.stat{
-  background:#f7f9fc;
+.stat-box{
+  background:#fff;
   border-radius:14px;
-  padding:14px;
-  font-size:21px;
+  padding:14px 8px;
+  text-align:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.stat-label{
+  font-size:15px;
   font-weight:700;
+  margin-bottom:8px;
+}
+
+.stat-value{
+  font-size:34px;
+  font-weight:900;
+}
+
+.team-value{
+  color:#0f7d3a;
+}
+
+.league-value{
+  color:#f05a00;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-top:18px;
 }
 
 .table{
@@ -96,21 +171,48 @@ body{
   border-collapse:collapse;
   margin-top:12px;
   font-size:15px;
+  overflow:hidden;
 }
 
 .table th,
 .table td{
   border:1px solid #ddd;
-  padding:8px;
+  padding:9px 6px;
   text-align:center;
 }
 
 .table th{
   background:#f4f4f4;
+  font-weight:800;
 }
 
 .rank1{
-  background:#fff8d6;
+  background:#fff4c9;
+  font-weight:800;
+}
+
+.score-text{
+  color:#f05a00;
+  font-weight:800;
+}
+
+.small{
+  font-size:14px;
+  color:#667;
+}
+
+@media (min-width:768px){
+  .container{
+    max-width:920px;
+  }
+
+  .section-wrap{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .actions{
+    grid-template-columns:1fr 1fr 1fr;
+  }
 }
 </style>
 </head>
@@ -166,20 +268,6 @@ function toNumber(value){
   return isNaN(n) ? 0 : n;
 }
 
-function getTeamIcon(team){
-  const icons = {
-    '錦和': '🔵',
-    '綠寶石': '🟢',
-    '國防': '🛡️',
-    '育友': '🟠',
-    '大觀': '🟣',
-    '華中': '🔴',
-    '妝點家': '🎾'
-  };
-
-  return icons[team] || '🎾';
-}
-
 function splitTeams(value){
   return String(value || '')
     .split(/[、,，\s]+/)
@@ -203,7 +291,7 @@ async function verifyMember(phone){
 
 function isValidStatus(record){
   const status = getValue(record, STATUS_FIELD);
-  return status === '先行計分中' || status === '審核通過';
+  return status === '先行計分中' || status === '審核通過' || status === '';
 }
 
 function buildRanking(records){
@@ -298,6 +386,13 @@ function buildPersonalRanking(ranking){
   return arr;
 }
 
+function rankLabel(rank){
+  if(rank === 1) return '🥇';
+  if(rank === 2) return '🥈';
+  if(rank === 3) return '🥉';
+  return rank;
+}
+
 function renderRows(rows, isAllLeague){
   if(!rows.length){
     return `
@@ -312,10 +407,10 @@ function renderRows(rows, isAllLeague){
 
     return `
       <tr class="${index === 0 ? 'rank1' : ''}">
-        <td>${rank}</td>
+        <td>${rankLabel(rank)}</td>
         <td>${r.name}</td>
-        <td>${getTeamIcon(r.team)} ${r.team}</td>
-        <td>${r.total}</td>
+        <td>${r.team}</td>
+        <td class="score-text">${r.total}</td>
         <td>${r.games}</td>
       </tr>
     `;
@@ -347,7 +442,7 @@ function renderTeamSelect(member, matches){
       ${teams.map(function(team){
         return `
           <button class="btn team-btn" data-team="${team}">
-            ${getTeamIcon(team)} ${team}
+            ${team}
           </button>
         `;
       }).join('')}
@@ -398,28 +493,65 @@ function renderMemberHome(member, matches, selectedTeam){
 
       <div class="info">📱 ${phone}</div>
       <div class="info">🎾 登錄球隊：${teamText || '-'}</div>
-      <div class="info">🔎 目前代表球隊：${selectedTeam ? getTeamIcon(selectedTeam) + ' ' + selectedTeam : '-'}</div>
+      <div class="info">🔎 目前代表球隊：<strong>${selectedTeam || '-'}</strong></div>
 
-      <div class="stat-grid">
-        <div class="stat">🏆 個人排名：#${myRank ? myRank.rank : '-'}</div>
-        <div class="stat">⭐ 個人積分：${myRank ? myRank.total : 0}</div>
-        <div class="stat">🎾 出賽場次：${myRank ? myRank.games : 0}</div>
-        <div class="stat">🌐 全聯盟總排名：#${totalRank ? totalRank.rank : '-'}</div>
-        <div class="stat">🔥 全聯盟總積分：${totalRank ? totalRank.total : 0}</div>
+      <div class="section-wrap">
+
+        <div class="panel team-panel">
+          <div class="panel-title">👥 代表球隊資訊</div>
+
+          <div class="main-team">${selectedTeam || '-'}</div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">🏆 球隊內排名</div>
+              <div class="stat-value team-value">#${myRank ? myRank.rank : '-'}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">⭐ 球隊積分</div>
+              <div class="stat-value team-value">${myRank ? myRank.total : 0}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">🎾 球隊出賽場次</div>
+              <div class="stat-value team-value">${myRank ? myRank.games : 0}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">👥 球隊成員排名</div>
+              <div class="stat-value team-value">#${myRank ? teamRows.findIndex(r => r.name === name) + 1 : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel league-panel">
+          <div class="panel-title">🌐 全聯盟資訊</div>
+
+          <div class="stat-box" style="margin-bottom:14px;">
+            <div class="stat-label">🌐 全聯盟總排名</div>
+            <div class="stat-value league-value">#${totalRank ? totalRank.rank : '-'}</div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-label">🔥 全聯盟總積分</div>
+            <div class="stat-value league-value">${totalRank ? totalRank.total : 0}</div>
+          </div>
+        </div>
+
       </div>
 
-      <button class="btn sub-btn" id="change-team-btn">切換代表球隊</button>
-      <button class="btn logout-btn" id="logout-btn">登出</button>
+      <div class="actions">
+        <button class="btn dark-btn" id="change-team-btn">切換代表球隊</button>
+        <button class="btn" id="toggle-ranking-btn">全聯盟排名查詢</button>
+        <button class="btn logout-btn" id="logout-btn">登出</button>
+      </div>
     </div>
 
     <div class="card">
       <div class="title" id="ranking-title">
         🥇 ${selectedTeam || ''} 球隊 TOP8
       </div>
-
-      <button class="btn" id="toggle-ranking-btn">
-        🌐 全聯盟排名查詢
-      </button>
 
       <table class="table">
         <thead>
@@ -455,11 +587,11 @@ function renderMemberHome(member, matches, selectedTeam){
 
     if(isAll){
       title.innerHTML = '🌐 全聯盟 TOP8';
-      btn.innerHTML = '🔎 返回球隊排名';
+      btn.innerHTML = '返回球隊排名';
       tbody.innerHTML = renderRows(allRows, true);
     }else{
       title.innerHTML = '🥇 ' + selectedTeam + ' 球隊 TOP8';
-      btn.innerHTML = '🌐 全聯盟排名查詢';
+      btn.innerHTML = '全聯盟排名查詢';
       tbody.innerHTML = renderRows(teamRows, false);
     }
   };
