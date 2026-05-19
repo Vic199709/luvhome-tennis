@@ -1,157 +1,221 @@
-<!-- ========================= -->
-<!-- 🔥 聯盟賽程系統 START -->
-<!-- 放在 </script> 前面 -->
-<!-- ========================= -->
-
-<script>
-
-function getTeamName(record, side){
-  const field = side === 'A'
-    ? '代表球隊_A_參賽者1'
-    : '代表球隊_B_參賽者1';
-
-  return getValue(record, field) || '-';
-}
-
-function buildScheduleSections(records){
-
-  const upcoming = [];
-  const live = [];
-  const completed = [];
-
-  records.forEach(function(record){
-
-    const status = getValue(record, '比賽狀態');
-
-    const item = {
-      date: getValue(record, '比賽日期時間') || '-',
-      place: getValue(record, '比賽場地') || '-',
-      aTeam: getTeamName(record, 'A'),
-      bTeam: getTeamName(record, 'B'),
-      aScore: getValue(record, 'A隊比數') || '0',
-      bScore: getValue(record, 'B隊比數') || '0',
-      winner: getValue(record, '比賽勝負') || '-'
-    };
-
-    if(status === '未開打'){
-      upcoming.push(item);
-    }
-
-    else if(status === '比賽中'){
-      live.push(item);
-    }
-
-    else if(status === '已完成'){
-      completed.push(item);
-    }
-
-  });
-
-  upcoming.sort((a,b) => String(a.date).localeCompare(String(b.date)));
-  live.sort((a,b) => String(b.date).localeCompare(String(a.date)));
-  completed.sort((a,b) => String(b.date).localeCompare(String(a.date)));
-
-  return {
-    upcoming,
-    live,
-    completed
-  };
-}
-
-function renderScheduleCards(data){
-
-  const upcomingHtml = data.upcoming.slice(0,3).map(function(item){
-    return `
-      <div class="schedule-card upcoming-card">
-        <div class="schedule-title">
-          📅 即將開打
-        </div>
-
-        <div class="schedule-date">
-          ${String(item.date).replace('T',' ').slice(0,16)}
-        </div>
-
-        <div class="schedule-match">
-          ${item.aTeam}
-          <span class="vs-text">VS</span>
-          ${item.bTeam}
-        </div>
-
-        <div class="schedule-place">
-          📍 ${item.place}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  const liveHtml = data.live.slice(0,3).map(function(item){
-    return `
-      <div class="schedule-card live-card">
-        <div class="schedule-title">
-          🔴 LIVE 比分
-        </div>
-
-        <div class="live-score">
-          ${item.aTeam}
-          <span class="score-number">${item.aScore}</span>
-
-          :
-          
-          <span class="score-number">${item.bScore}</span>
-          ${item.bTeam}
-        </div>
-
-        <div class="live-status">
-          目前進行中
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  const completedHtml = data.completed.slice(0,5).map(function(item){
-    return `
-      <div class="schedule-card completed-card">
-        <div class="schedule-title">
-          🏆 最新戰績
-        </div>
-
-        <div class="schedule-match">
-          ${item.aTeam}
-          <span class="score-number">${item.aScore}</span>
-
-          :
-          
-          <span class="score-number">${item.bScore}</span>
-          ${item.bTeam}
-        </div>
-
-        <div class="winner-text">
-          ${item.winner}
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  return `
-    <div class="card">
-
-      <div class="title">
-        🏟️ 聯盟賽程資訊
-      </div>
-
-      ${upcomingHtml || ''}
-
-      ${liveHtml || ''}
-
-      ${completedHtml || ''}
-
-    </div>
-  `;
-}
-
-</script>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>網球聯盟會員入口</title>
 
 <style>
+body{
+  margin:0;
+  background:#f3f6fb;
+  font-family:"Microsoft JhengHei", Arial, sans-serif;
+  color:#122033;
+}
+
+.container{
+  max-width:520px;
+  margin:auto;
+  padding:18px;
+}
+
+.card{
+  background:#fff;
+  border-radius:22px;
+  padding:22px;
+  margin-bottom:18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
+}
+
+.title{
+  font-size:30px;
+  font-weight:800;
+  margin-bottom:18px;
+}
+
+.input{
+  width:100%;
+  padding:16px;
+  font-size:20px;
+  border:1px solid #ddd;
+  border-radius:14px;
+  box-sizing:border-box;
+  margin-bottom:16px;
+}
+
+.btn{
+  width:100%;
+  padding:16px;
+  border:0;
+  border-radius:14px;
+  background:#1f73e0;
+  color:#fff;
+  font-size:19px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:10px;
+}
+
+.logout-btn{ background:#ef4f4f; }
+.dark-btn{ background:#374f5a; }
+.purple-btn{ background:#6d45d8; }
+
+.team-btn{
+  background:#fff;
+  color:#122033;
+  border:1px solid #ddd;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.info{
+  font-size:19px;
+  margin:10px 0;
+  line-height:1.6;
+}
+
+.section-wrap{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+  margin-top:16px;
+}
+
+.panel{
+  border-radius:18px;
+  padding:18px;
+  border:1px solid #ddd;
+}
+
+.team-panel{
+  background:#f0fff5;
+  border-color:#9adfb2;
+}
+
+.league-panel{
+  background:#fff8ed;
+  border-color:#ffc47a;
+}
+
+.panel-title{
+  font-size:22px;
+  font-weight:800;
+  margin-bottom:14px;
+  padding-bottom:10px;
+  border-bottom:3px solid;
+}
+
+.team-panel .panel-title{
+  border-color:#159447;
+  color:#0f7d3a;
+}
+
+.league-panel .panel-title{
+  border-color:#ff7a00;
+  color:#df5f00;
+}
+
+.main-team{
+  text-align:center;
+  font-size:34px;
+  font-weight:900;
+  color:#0f7d3a;
+  margin:12px 0 18px;
+}
+
+.stats-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+.stat-box{
+  background:#fff;
+  border-radius:14px;
+  padding:14px 8px;
+  text-align:center;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.stat-label{
+  font-size:15px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.stat-value{
+  font-size:34px;
+  font-weight:900;
+}
+
+.team-value{ color:#0f7d3a; }
+.league-value{ color:#f05a00; }
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  margin-top:18px;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:12px;
+  font-size:15px;
+}
+
+.table th,
+.table td{
+  border:1px solid #ddd;
+  padding:9px 6px;
+  text-align:center;
+}
+
+.table th{
+  background:#f4f4f4;
+  font-weight:800;
+}
+
+.rank1{
+  background:#fff4c9;
+  font-weight:800;
+}
+
+.score-text{
+  color:#f05a00;
+  font-weight:800;
+}
+
+.match-card-title{
+  color:#6d45d8;
+  font-size:26px;
+  font-weight:900;
+}
+
+.match-table th{
+  background:#6d45d8;
+  color:white;
+}
+
+.win-tag,
+.lose-tag{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:8px;
+  font-weight:800;
+}
+
+.win-tag{
+  color:#0a8f3c;
+  background:#e6f8ec;
+  border:1px solid #72d899;
+}
+
+.lose-tag{
+  color:#d93025;
+  background:#fff0f0;
+  border:1px solid #ff9b9b;
+}
 
 .schedule-card{
   border-radius:18px;
@@ -196,7 +260,7 @@ function renderScheduleCards(data){
 }
 
 .live-score{
-  font-size:32px;
+  font-size:30px;
   font-weight:900;
   text-align:center;
   margin-top:12px;
@@ -225,4 +289,775 @@ function renderScheduleCards(data){
   opacity:.85;
 }
 
+.empty-text{
+  padding:14px;
+  background:#f7f8fb;
+  border-radius:12px;
+  color:#667;
+  text-align:center;
+  font-weight:700;
+}
+
+.small{
+  font-size:14px;
+  color:#667;
+  text-align:center;
+  margin-top:12px;
+}
+
+@media (min-width:768px){
+  .container{
+    max-width:920px;
+  }
+
+  .section-wrap{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .actions{
+    grid-template-columns:1fr 1fr 1fr 1fr;
+  }
+}
 </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div id="login-page">
+    <div class="card">
+      <div class="title">🎾 網球聯盟會員登入</div>
+
+      <input
+        id="phone-input"
+        class="input"
+        placeholder="請輸入手機號碼"
+      >
+
+      <button id="login-btn" class="btn">
+        會員驗證登入
+      </button>
+    </div>
+  </div>
+
+  <div id="member-page" style="display:none;"></div>
+
+</div>
+
+<script>
+const STATUS_FIELD = '積分狀態';
+const WINNER_FIELD = '比賽勝負';
+const MATCH_STATUS_FIELD = '比賽狀態';
+const MATCH_DATE_FIELD = '比賽日期時間';
+const MATCH_PLACE_FIELD = '比賽場地';
+
+const DATE_FIELDS = ['比賽日期時間','比賽日期','日期','建立時間'];
+const SCORE_FIELDS = ['比數','比分','比賽比數','A隊_B隊比數'];
+
+const PLAYERS = [
+  { phone: '手機號碼_驗證用_A_參賽者1', name: '參賽者姓名_A_參賽者1', team: '代表球隊_A_參賽者1', score: '本場積分_A_參賽者1', side: 'A' },
+  { phone: '手機號碼_驗證用_A_參賽者2', name: '參賽者姓名_A_參賽者2', team: '代表球隊_A_參賽者2', score: '本場積分_A_參賽者2', side: 'A' },
+  { phone: '手機號碼_驗證用_B_參賽者1', name: '參賽者姓名_B_參賽者1', team: '代表球隊_B_參賽者1', score: '本場積分_B_參賽者1', side: 'B' },
+  { phone: '手機號碼_驗證用_B_參賽者2', name: '參賽者姓名_B_參賽者2', team: '代表球隊_B_參賽者2', score: '本場積分_B_參賽者2', side: 'B' }
+];
+
+let currentMember = null;
+let currentMatches = [];
+let currentSelectedTeam = '';
+
+function normalizePhone(value){
+  return String(value || '').replace(/\D/g,'');
+}
+
+function getValue(record, field){
+  return record[field] ? record[field].value : '';
+}
+
+function getFirstValue(record, fields){
+  for(const f of fields){
+    const v = getValue(record, f);
+    if(v) return v;
+  }
+  return '';
+}
+
+function toNumber(value){
+  const n = Number(value);
+  return isNaN(n) ? 0 : n;
+}
+
+function splitTeams(value){
+  return String(value || '')
+    .split(/[、,，\s]+/)
+    .map(t => t.trim())
+    .filter(Boolean);
+}
+
+async function verifyMember(phone){
+  const resp = await fetch(
+    `/.netlify/functions/login?phone=${encodeURIComponent(phone)}`
+  );
+
+  const data = await resp.json();
+
+  if(!resp.ok){
+    throw new Error(data.error || 'API連線失敗');
+  }
+
+  return data;
+}
+
+function isValidStatus(record){
+  const status = getValue(record, STATUS_FIELD);
+  const matchStatus = getValue(record, MATCH_STATUS_FIELD);
+
+  if(matchStatus && matchStatus !== '已完成') return false;
+
+  return status === '先行計分中' || status === '審核通過' || status === '';
+}
+
+function getTeamName(record, side){
+  const field = side === 'A'
+    ? '代表球隊_A_參賽者1'
+    : '代表球隊_B_參賽者1';
+
+  return getValue(record, field) || '-';
+}
+
+function getAScore(record){
+  return getValue(record, 'A隊比數') || getValue(record, 'A比數') || '0';
+}
+
+function getBScore(record){
+  return getValue(record, 'B隊比數') || getValue(record, 'B比數') || '0';
+}
+
+function formatDateTime(value){
+  if(!value) return '-';
+  return String(value).replace('T',' ').slice(0,16);
+}
+
+function buildScheduleSections(records){
+  const upcoming = [];
+  const live = [];
+  const completed = [];
+
+  records.forEach(function(record){
+    const status = getValue(record, MATCH_STATUS_FIELD);
+    const date = getValue(record, MATCH_DATE_FIELD) || getFirstValue(record, DATE_FIELDS);
+
+    const item = {
+      date: date || '-',
+      place: getValue(record, MATCH_PLACE_FIELD) || '-',
+      aTeam: getTeamName(record, 'A'),
+      bTeam: getTeamName(record, 'B'),
+      aScore: getAScore(record),
+      bScore: getBScore(record),
+      winner: getValue(record, WINNER_FIELD) || '-'
+    };
+
+    if(status === '未開打'){
+      upcoming.push(item);
+    }else if(status === '比賽中'){
+      live.push(item);
+    }else if(status === '已完成'){
+      completed.push(item);
+    }
+  });
+
+  upcoming.sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  live.sort((a,b) => String(a.date).localeCompare(String(b.date)));
+  completed.sort((a,b) => String(b.date).localeCompare(String(a.date)));
+
+  return { upcoming, live, completed };
+}
+
+function renderScheduleCards(data){
+  const upcomingHtml = data.upcoming.slice(0,3).map(function(item){
+    return `
+      <div class="schedule-card upcoming-card">
+        <div class="schedule-title">📅 即將開打</div>
+        <div class="schedule-date">${formatDateTime(item.date)}</div>
+        <div class="schedule-match">
+          ${item.aTeam}
+          <span class="vs-text">VS</span>
+          ${item.bTeam}
+        </div>
+        <div class="schedule-place">📍 ${item.place}</div>
+      </div>
+    `;
+  }).join('');
+
+  const liveHtml = data.live.slice(0,3).map(function(item){
+    return `
+      <div class="schedule-card live-card">
+        <div class="schedule-title">🔴 LIVE 比分</div>
+        <div class="live-score">
+          ${item.aTeam}
+          <span class="score-number">${item.aScore}</span>
+          :
+          <span class="score-number">${item.bScore}</span>
+          ${item.bTeam}
+        </div>
+        <div class="live-status">目前進行中</div>
+      </div>
+    `;
+  }).join('');
+
+  const completedHtml = data.completed.slice(0,5).map(function(item){
+    return `
+      <div class="schedule-card completed-card">
+        <div class="schedule-title">🏆 最新戰績</div>
+        <div class="schedule-match">
+          ${item.aTeam}
+          <span class="score-number">${item.aScore}</span>
+          :
+          <span class="score-number">${item.bScore}</span>
+          ${item.bTeam}
+        </div>
+        <div class="winner-text">${item.winner}</div>
+      </div>
+    `;
+  }).join('');
+
+  if(!upcomingHtml && !liveHtml && !completedHtml){
+    return `
+      <div class="card">
+        <div class="title">🏟️ 聯盟賽程資訊</div>
+        <div class="empty-text">目前尚無賽程資料</div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card">
+      <div class="title">🏟️ 聯盟賽程資訊</div>
+      ${upcomingHtml || ''}
+      ${liveHtml || ''}
+      ${completedHtml || ''}
+    </div>
+  `;
+}
+
+function buildRanking(records){
+  const map = {};
+
+  records.forEach(function(record){
+    if(!isValidStatus(record)) return;
+
+    const winner = getValue(record, WINNER_FIELD);
+
+    PLAYERS.forEach(function(p){
+      const phone = normalizePhone(getValue(record, p.phone));
+      const name = getValue(record, p.name);
+      const team = getValue(record, p.team);
+      const score = toNumber(getValue(record, p.score));
+
+      if(!name || !team) return;
+
+      const key = phone + '___' + name + '___' + team;
+
+      if(!map[key]){
+        map[key] = {
+          phone,
+          name,
+          team,
+          total:0,
+          games:0,
+          win:0,
+          lose:0
+        };
+      }
+
+      map[key].total += score;
+      map[key].games += 1;
+
+      const isWin =
+        (winner === 'A隊獲勝' && p.side === 'A') ||
+        (winner === 'B隊獲勝' && p.side === 'B');
+
+      if(isWin){
+        map[key].win += 1;
+      }else{
+        map[key].lose += 1;
+      }
+    });
+  });
+
+  const arr = Object.values(map);
+
+  arr.sort(function(a,b){
+    if(b.total !== a.total) return b.total - a.total;
+    if(b.win !== a.win) return b.win - a.win;
+    return a.lose - b.lose;
+  });
+
+  arr.forEach(function(item,index){
+    item.rank = index + 1;
+  });
+
+  return arr;
+}
+
+function buildPersonalRanking(ranking){
+  const map = {};
+
+  ranking.forEach(function(r){
+    const key = r.phone || r.name;
+
+    if(!map[key]){
+      map[key] = {
+        phone:r.phone,
+        name:r.name,
+        total:0,
+        games:0
+      };
+    }
+
+    map[key].total += r.total;
+    map[key].games += r.games;
+  });
+
+  const arr = Object.values(map);
+
+  arr.sort(function(a,b){
+    return b.total - a.total;
+  });
+
+  arr.forEach(function(r,index){
+    r.rank = index + 1;
+  });
+
+  return arr;
+}
+
+function rankLabel(rank){
+  if(rank === 1) return '🥇';
+  if(rank === 2) return '🥈';
+  if(rank === 3) return '🥉';
+  return rank;
+}
+
+function renderRows(rows, isAllLeague){
+  if(!rows.length){
+    return `
+      <tr>
+        <td colspan="5">目前無資料</td>
+      </tr>
+    `;
+  }
+
+  return rows.map(function(r,index){
+    const rank = isAllLeague ? r.rank : index + 1;
+
+    return `
+      <tr class="${index === 0 ? 'rank1' : ''}">
+        <td>${rankLabel(rank)}</td>
+        <td>${r.name}</td>
+        <td>${r.team}</td>
+        <td class="score-text">${r.total}</td>
+        <td>${r.games}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function getMatchDate(record){
+  const raw = getFirstValue(record, DATE_FIELDS);
+  if(!raw) return '-';
+  return String(raw).slice(0,10);
+}
+
+function getScoreText(record){
+  const direct = getFirstValue(record, SCORE_FIELDS);
+  if(direct) return direct;
+
+  const aScore = getAScore(record);
+  const bScore = getBScore(record);
+
+  if(aScore !== '' && bScore !== ''){
+    return aScore + '-' + bScore;
+  }
+
+  return '-';
+}
+
+function buildMyMatches(records, phone, name, selectedTeam){
+  const list = [];
+
+  records.forEach(function(record){
+    if(!isValidStatus(record)) return;
+
+    const winner = getValue(record, WINNER_FIELD);
+
+    const me = PLAYERS.find(function(p){
+      const pPhone = normalizePhone(getValue(record, p.phone));
+      const pName = getValue(record, p.name);
+      const pTeam = getValue(record, p.team);
+
+      return (pPhone === phone || pName === name) &&
+        (!selectedTeam || pTeam === selectedTeam);
+    });
+
+    if(!me) return;
+
+    const mySide = me.side;
+    const partnerSidePlayers = PLAYERS.filter(p => p.side === mySide);
+    const opponentSidePlayers = PLAYERS.filter(p => p.side !== mySide);
+
+    const partnerNames = partnerSidePlayers
+      .map(p => getValue(record, p.name))
+      .filter(n => n && n !== name);
+
+    const opponentNames = opponentSidePlayers
+      .map(p => getValue(record, p.name))
+      .filter(Boolean);
+
+    const myTeam = getValue(record, me.team);
+    const myScore = toNumber(getValue(record, me.score));
+
+    const isWin =
+      (winner === 'A隊獲勝' && mySide === 'A') ||
+      (winner === 'B隊獲勝' && mySide === 'B');
+
+    list.push({
+      date:getMatchDate(record),
+      team:myTeam,
+      partner:partnerNames.join('、') || '-',
+      opponent:opponentNames.join('、') || '-',
+      score:getScoreText(record),
+      result:isWin ? '勝' : '負',
+      point:myScore
+    });
+  });
+
+  list.sort(function(a,b){
+    return String(b.date).localeCompare(String(a.date));
+  });
+
+  return list;
+}
+
+function renderMatchRows(rows, limit){
+  const showRows = rows.slice(0, limit);
+
+  if(!showRows.length){
+    return `
+      <tr>
+        <td colspan="7">目前尚無比賽紀錄</td>
+      </tr>
+    `;
+  }
+
+  return showRows.map(function(r){
+    return `
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.team}</td>
+        <td>${r.partner}</td>
+        <td>${r.opponent}</td>
+        <td>${r.score}</td>
+        <td>
+          <span class="${r.result === '勝' ? 'win-tag' : 'lose-tag'}">
+            ${r.result}
+          </span>
+        </td>
+        <td class="score-text">${r.point}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderTeamSelect(member, matches){
+  const name = getValue(member, '參賽者姓名');
+  const phone = getValue(member, '手機號碼');
+  const teamText = getValue(member, '代表球隊');
+  const teams = splitTeams(teamText);
+
+  document.getElementById('login-page').style.display = 'none';
+
+  const page = document.getElementById('member-page');
+  page.style.display = 'block';
+
+  if(teams.length <= 1){
+    renderMemberHome(member, matches, teams[0] || '');
+    return;
+  }
+
+  page.innerHTML = `
+    <div class="card">
+      <div class="title">${name} 您好 👋</div>
+      <div class="info">📱 ${phone}</div>
+      <div class="info">請選擇要查看的代表球隊：</div>
+
+      ${teams.map(function(team){
+        return `
+          <button class="btn team-btn" data-team="${team}">
+            ${team}
+          </button>
+        `;
+      }).join('')}
+
+      <button class="btn logout-btn" id="logout-btn">登出</button>
+    </div>
+  `;
+
+  document.querySelectorAll('.team-btn').forEach(function(btn){
+    btn.onclick = function(){
+      renderMemberHome(member, matches, btn.dataset.team);
+    };
+  });
+
+  document.getElementById('logout-btn').onclick = logout;
+}
+
+function renderMemberHome(member, matches, selectedTeam){
+  currentSelectedTeam = selectedTeam;
+
+  const name = getValue(member, '參賽者姓名');
+  const phone = normalizePhone(getValue(member, '手機號碼'));
+  const teamText = getValue(member, '代表球隊');
+
+  const ranking = buildRanking(matches);
+  const scheduleData = buildScheduleSections(matches);
+
+  const myRank = ranking.find(function(r){
+    return (r.phone === phone || r.name === name) && r.team === selectedTeam;
+  });
+
+  const personalRanking = buildPersonalRanking(ranking);
+
+  const totalRank = personalRanking.find(function(r){
+    return r.phone === phone || r.name === name;
+  });
+
+  const teamRows = ranking
+    .filter(function(r){
+      return r.team === selectedTeam;
+    })
+    .slice(0,8);
+
+  const allRows = ranking.slice(0,8);
+
+  const myMatches = buildMyMatches(matches, phone, name, selectedTeam);
+
+  const page = document.getElementById('member-page');
+
+  page.innerHTML = `
+    <div class="card">
+      <div class="title">${name} 您好 👋</div>
+
+      <div class="info">📱 ${phone}</div>
+      <div class="info">🎾 登錄球隊：${teamText || '-'}</div>
+      <div class="info">🔎 目前代表球隊：<strong>${selectedTeam || '-'}</strong></div>
+
+      <div class="section-wrap">
+
+        <div class="panel team-panel">
+          <div class="panel-title">👥 代表球隊資訊</div>
+
+          <div class="main-team">${selectedTeam || '-'}</div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-label">🏆 球隊內排名</div>
+              <div class="stat-value team-value">#${myRank ? myRank.rank : '-'}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">⭐ 球隊積分</div>
+              <div class="stat-value team-value">${myRank ? myRank.total : 0}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">🎾 球隊出賽場次</div>
+              <div class="stat-value team-value">${myRank ? myRank.games : 0}</div>
+            </div>
+
+            <div class="stat-box">
+              <div class="stat-label">👥 球隊成員排名</div>
+              <div class="stat-value team-value">#${myRank ? teamRows.findIndex(r => r.name === name) + 1 : '-'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel league-panel">
+          <div class="panel-title">🌐 全聯盟資訊</div>
+
+          <div class="stat-box" style="margin-bottom:14px;">
+            <div class="stat-label">🌐 全聯盟總排名</div>
+            <div class="stat-value league-value">#${totalRank ? totalRank.rank : '-'}</div>
+          </div>
+
+          <div class="stat-box">
+            <div class="stat-label">🔥 全聯盟總積分</div>
+            <div class="stat-value league-value">${totalRank ? totalRank.total : 0}</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <button class="btn dark-btn" id="change-team-btn">切換代表球隊</button>
+        <button class="btn" id="toggle-ranking-btn">全聯盟排名查詢</button>
+        <button class="btn purple-btn" id="match-record-btn">我的比賽紀錄</button>
+        <button class="btn logout-btn" id="logout-btn">登出</button>
+      </div>
+    </div>
+
+    ${renderScheduleCards(scheduleData)}
+
+    <div class="card">
+      <div class="title" id="ranking-title">
+        🥇 ${selectedTeam || ''} 球隊 TOP8
+      </div>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th>排名</th>
+            <th>姓名</th>
+            <th>球隊</th>
+            <th>積分</th>
+            <th>場次</th>
+          </tr>
+        </thead>
+        <tbody id="ranking-body">
+          ${renderRows(teamRows, false)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" id="match-record-section" style="display:none;">
+      <div class="match-card-title">📋 我的比賽紀錄</div>
+
+      <table class="table match-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>球隊</th>
+            <th>搭檔</th>
+            <th>對手</th>
+            <th>比數</th>
+            <th>勝負</th>
+            <th>積分</th>
+          </tr>
+        </thead>
+        <tbody id="match-record-body">
+          ${renderMatchRows(myMatches, 5)}
+        </tbody>
+      </table>
+
+      ${myMatches.length > 5 ? `
+        <button class="btn purple-btn" id="show-more-matches-btn">
+          查看更多
+        </button>
+      ` : ''}
+
+      <div class="small">* 目前顯示最近比賽紀錄</div>
+    </div>
+  `;
+
+  document.getElementById('logout-btn').onclick = logout;
+
+  document.getElementById('change-team-btn').onclick = function(){
+    renderTeamSelect(member, matches);
+  };
+
+  document.getElementById('match-record-btn').onclick = function(){
+    const section = document.getElementById('match-record-section');
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    section.scrollIntoView({ behavior:'smooth' });
+  };
+
+  const moreBtn = document.getElementById('show-more-matches-btn');
+
+  if(moreBtn){
+    let expanded = false;
+
+    moreBtn.onclick = function(){
+      expanded = !expanded;
+
+      document.getElementById('match-record-body').innerHTML =
+        renderMatchRows(myMatches, expanded ? myMatches.length : 5);
+
+      moreBtn.innerHTML = expanded ? '收合紀錄' : '查看更多';
+    };
+  }
+
+  let isAll = false;
+
+  document.getElementById('toggle-ranking-btn').onclick = function(){
+    const tbody = document.getElementById('ranking-body');
+    const title = document.getElementById('ranking-title');
+    const btn = document.getElementById('toggle-ranking-btn');
+
+    isAll = !isAll;
+
+    if(isAll){
+      title.innerHTML = '🌐 全聯盟 TOP8';
+      btn.innerHTML = '返回球隊排名';
+      tbody.innerHTML = renderRows(allRows, true);
+    }else{
+      title.innerHTML = '🥇 ' + selectedTeam + ' 球隊 TOP8';
+      btn.innerHTML = '全聯盟排名查詢';
+      tbody.innerHTML = renderRows(teamRows, false);
+    }
+  };
+}
+
+function logout(){
+  localStorage.removeItem('member_phone');
+  localStorage.removeItem('member_name');
+  location.reload();
+}
+
+document.getElementById('login-btn').onclick = async function(){
+  const btn = document.getElementById('login-btn');
+  const phone = normalizePhone(document.getElementById('phone-input').value);
+
+  if(!phone){
+    alert('請輸入手機號碼');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = '驗證中...';
+
+  try{
+    const data = await verifyMember(phone);
+
+    if(!data.success || !data.records || data.records.length === 0){
+      alert('驗證失敗，查無會員資料');
+      return;
+    }
+
+    currentMember = data.records[0];
+    currentMatches = data.matches || [];
+
+    localStorage.setItem('member_phone', phone);
+    localStorage.setItem('member_name', getValue(currentMember, '參賽者姓名'));
+
+    renderTeamSelect(currentMember, currentMatches);
+
+  }catch(e){
+    console.error(e);
+    alert('API連線失敗，請確認 Netlify Function 或 API Token');
+  }finally{
+    btn.disabled = false;
+    btn.innerText = '會員驗證登入';
+  }
+};
+
+window.onload = function(){
+  const phone = localStorage.getItem('member_phone');
+
+  if(phone){
+    document.getElementById('phone-input').value = phone;
+  }
+};
+</script>
+
+</body>
+</html>
