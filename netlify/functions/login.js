@@ -2,22 +2,32 @@ exports.handler = async function(event) {
 
   const DOMAIN = 'https://dekt.cybozu.com';
   const APP_ID = '178';
-
   const API_TOKEN = 'kRuyhs6vF579cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
 
-  const phone = event.queryStringParameters.phone;
+  const phone = event.queryStringParameters.phone || '';
+
+  if (!phone) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        records: [],
+        error: '缺少手機號碼'
+      })
+    };
+  }
+
+  const query =
+    '手機號碼 = "' + phone + '" and 是否有效 = "Y"';
+
+  const url =
+    DOMAIN +
+    '/k/v1/records.json?app=' +
+    APP_ID +
+    '&query=' +
+    encodeURIComponent(query);
 
   try {
-
-    const query =
-      '手機號碼 = "' + phone + '" and 是否有效 = "Y"';
-
-    const url =
-      DOMAIN +
-      '/k/v1/records.json?app=' +
-      APP_ID +
-      '&query=' +
-      encodeURIComponent(query);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -28,14 +38,23 @@ exports.handler = async function(event) {
 
     const data = await response.json();
 
+    if (!response.ok) {
+      return {
+        statusCode: response.status,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          records: [],
+          error: data.message || 'Kintone API 錯誤',
+          detail: data
+        })
+      };
+    }
+
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        success: data.records.length > 0,
-        data: data.records
+        records: data.records || []
       })
     };
 
@@ -43,11 +62,9 @@ exports.handler = async function(event) {
 
     return {
       statusCode: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        success: false,
+        records: [],
         error: error.toString()
       })
     };
