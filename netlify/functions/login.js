@@ -1,46 +1,57 @@
 exports.handler = async function(event) {
 
   const DOMAIN = 'https://dekt.cybozu.com';
+  const APP_ID = '178';
 
-  const API_TOKEN = 'kRuyhs6vF5Z9cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
+  const API_TOKEN = 'kRuyhs6vF579cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
 
-  const APP_ID = 178;
+  const phone = event.queryStringParameters.phone;
 
-  const phone = event.queryStringParameters.phone || '';
+  try {
 
-  const query =
-    encodeURIComponent(
-      `手機號碼 = "${phone}" and 是否有效 = "Y"`
-    );
+    const query =
+      '手機號碼 = "' + phone + '" and 是否有效 = "Y"';
 
-  const url =
-    `${DOMAIN}/k/v1/records.json?app=${APP_ID}&query=${query}`;
+    const url =
+      DOMAIN +
+      '/k/v1/records.json?app=' +
+      APP_ID +
+      '&query=' +
+      encodeURIComponent(query);
 
-  try{
-
-    const resp = await fetch(url,{
-      headers:{
-        'X-Cybozu-API-Token':API_TOKEN
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Cybozu-API-Token': API_TOKEN
       }
     });
 
-    const data = await resp.json();
+    const data = await response.json();
 
     return {
-      statusCode:200,
-      headers:{
-        'Access-Control-Allow-Origin':'*'
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json'
       },
-      body:JSON.stringify(data)
-    };
-
-  }catch(e){
-
-    return {
-      statusCode:500,
-      body:JSON.stringify({
-        error:e.toString()
+      body: JSON.stringify({
+        success: data.records.length > 0,
+        data: data.records
       })
     };
+
+  } catch (error) {
+
+    return {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        success: false,
+        error: error.toString()
+      })
+    };
+
   }
+
 };
