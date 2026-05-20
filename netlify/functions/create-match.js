@@ -9,16 +9,15 @@ exports.handler = async function(event) {
   const MATCH_APP_ID = '170';
 
   // API TOKEN
-  const MEMBER_API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
-  const MATCH_API_TOKEN = '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
+  const MEMBER_API_TOKEN =
+    'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
+
+  const MATCH_API_TOKEN =
+    '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
 
   try {
 
     const body = JSON.parse(event.body);
-
-    // =========================
-    // 前端傳入資料
-    // =========================
 
     const {
       matchDate,
@@ -153,9 +152,7 @@ exports.handler = async function(event) {
         value: scoreB || ''
       },
 
-      // =====================
-      // A隊
-      // =====================
+      // A隊1
 
       '手機號碼_驗證用': {
         value: a1Phone
@@ -173,6 +170,8 @@ exports.handler = async function(event) {
         value: a1['代表球隊'].value
       },
 
+      // A隊2
+
       '手機號碼_驗證用_參賽者2': {
         value: a2Phone
       },
@@ -189,9 +188,7 @@ exports.handler = async function(event) {
         value: a2['代表球隊'].value
       },
 
-      // =====================
-      // B隊
-      // =====================
+      // B隊1
 
       '手機號碼_驗證用_B隊': {
         value: b1Phone
@@ -208,6 +205,8 @@ exports.handler = async function(event) {
       '代表球隊_B隊': {
         value: b1['代表球隊'].value
       },
+
+      // B隊2
 
       '手機號碼_驗證用_B隊2': {
         value: b2Phone
