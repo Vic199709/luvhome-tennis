@@ -8,14 +8,19 @@ exports.handler = async (event) => {
       .replace(/\D/g, '')
       .trim();
 
-    const query = `手機號碼 = "${phone}" and 是否有效 = "Y"`;
+    if (!phone) {
+      return json({
+        success: false,
+        message: '未輸入手機號碼'
+      });
+    }
 
     const url =
       DOMAIN +
       '/k/v1/records.json?app=' +
       APP_ID +
       '&query=' +
-      encodeURIComponent(query);
+      encodeURIComponent('order by $id desc limit 500');
 
     const response = await fetch(url, {
       method: 'GET',
@@ -34,17 +39,35 @@ exports.handler = async (event) => {
       });
     }
 
-    if (!data.records || data.records.length === 0) {
+    const records = data.records || [];
+
+    const record = records.find(r => {
+      const recordPhone = String(r['手機號碼']?.value || '')
+        .replace(/\D/g, '')
+        .trim();
+
+      return recordPhone === phone;
+    });
+
+    if (!record) {
       return json({
         success: false,
         message: '查無會員',
-        records: []
+        inputPhone: phone,
+        totalRecords: records.length
       });
     }
 
-    const r = data.records[0];
+    const isValid = String(record['是否有效']?.value || '').trim();
 
-    const teamText = String(r['代表球隊']?.value || '');
+    if (isValid && isValid !== 'Y') {
+      return json({
+        success: false,
+        message: '會員尚未啟用'
+      });
+    }
+
+    const teamText = String(record['代表球隊']?.value || '');
 
     const teams = teamText
       .replace(/,/g, '、')
@@ -54,16 +77,16 @@ exports.handler = async (event) => {
       .filter(Boolean);
 
     const member = {
-      phone: r['手機號碼']?.value || '',
-      name: r['參賽者姓名']?.value || '',
+      phone: record['手機號碼']?.value || '',
+      name: record['參賽者姓名']?.value || '',
       teams: teams,
-      valid: r['是否有效']?.value || ''
+      valid: isValid
     };
 
     return json({
       success: true,
       member: member,
-      records: data.records,
+      records: [record],
       matches: []
     });
 
