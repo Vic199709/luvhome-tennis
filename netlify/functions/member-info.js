@@ -1,72 +1,71 @@
-exports.handler = async (event) => {
-  const APP_ID = '171';
-  const API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
-  const DOMAIN = 'https://dekt.cybozu.com';
-
+exports.handler = async function (event) {
   try {
-    const phone = String(event.queryStringParameters?.phone || '')
-      .replace(/\D/g, '')
-      .trim();
+    const phone = (event.queryStringParameters.phone || "").replace(/\D/g, "");
 
-    const response = await fetch(
-      DOMAIN + '/k/v1/records.json?app=' + APP_ID + '&query=' + encodeURIComponent('order by $id desc limit 500'),
-      {
-        method: 'GET',
-        headers: {
-          'X-Cybozu-API-Token': API_TOKEN
-        }
-      }
-    );
-
-    const data = await response.json();
-    const records = data.records || [];
-
-    const record = records.find(r => {
-      const p = String(r['參賽者手機']?.value || '')
-        .replace(/\D/g, '')
-        .trim();
-
-      return p === phone;
-    });
-
-    if (!record) {
-      return json({
-        success: false,
-        message: '查無會員',
-        inputPhone: phone,
-        totalRecords: records.length
+    if (!phone) {
+      return response({
+        ok: false,
+        message: "請輸入手機號碼"
       });
     }
 
-    const teams = Array.isArray(record['代表球隊']?.value)
-      ? record['代表球隊'].value
-      : [];
+    const KINTONE_DOMAIN = process.env.KINTONE_DOMAIN;
+    const KINTONE_API_TOKEN = process.env.KINTONE_API_TOKEN_APP178;
+    const APP_ID = 178;
 
-    return json({
-      success: true,
-      member: {
-        phone: record['參賽者手機']?.value || '',
-        name: record['參賽者姓名']?.value || '',
-        age: record['驗證年齡']?.value || '',
-        teams: teams,
-        team: teams.join('、')
+    const query = `手機號碼 = "${phone}" and 是否有效 = "Y"`;
+
+    const url =
+      `https://${KINTONE_DOMAIN}/k/v1/records.json` +
+      `?app=${APP_ID}&query=${encodeURIComponent(query)}`;
+
+    const kintoneRes = await fetch(url, {
+      method: "GET",
+      headers: {
+        "X-Cybozu-API-Token": KINTONE_API_TOKEN
       }
     });
 
+    const data = await kintoneRes.json();
+
+    if (!data.records || data.records.length === 0) {
+      return response({
+        ok: false,
+        message: "查無會員資料，請確認手機號碼"
+      });
+    }
+
+    const record = data.records[0];
+
+    const teamsText = record["代表球隊"].value || "";
+
+    const teams = teamsText
+      .split(/[、,，・\s]+/)
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    return response({
+      ok: true,
+      phone: record["手機號碼"].value,
+      name: record["參賽者姓名"].value,
+      teams
+    });
+
   } catch (error) {
-    return json({
-      success: false,
-      message: 'member-info error',
+    return response({
+      ok: false,
+      message: "系統查詢失敗，請稍後再試",
       error: error.message
     });
   }
 };
 
-function json(body) {
+function response(body) {
   return {
     statusCode: 200,
     headers: {
-      'Content-Type': 'application/json'
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*"
     },
     body: JSON.stringify(body)
   };
