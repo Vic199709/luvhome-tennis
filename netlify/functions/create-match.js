@@ -9,7 +9,7 @@ exports.handler = async function(event) {
   const MATCH_APP_ID = '170';
 
   // API TOKEN
-  const MEMBER_API_TOKEN = '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
+  const MEMBER_API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
   const MATCH_API_TOKEN = '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
 
   try {
