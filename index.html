@@ -3,502 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>網球聯盟會員入口</title>
-
 <style>
-
-body{
-  margin:0;
-  background:#f5f7fb;
-  font-family:"Microsoft JhengHei";
-  color:#222;
-}
-
-.container{
-  max-width:480px;
-  margin:auto;
-  padding:24px;
-}
-
-.card{
-  background:#fff;
-  border-radius:20px;
-  padding:24px;
-  margin-bottom:20px;
-  box-shadow:0 8px 24px rgba(0,0,0,.08);
-}
-
-.title{
-  font-size:32px;
-  font-weight:700;
-  margin-bottom:24px;
-}
-
-.input{
-  width:100%;
-  padding:16px;
-  font-size:20px;
-  border:1px solid #ddd;
-  border-radius:12px;
-  box-sizing:border-box;
-  margin-bottom:18px;
-}
-
-.btn{
-  width:100%;
-  padding:18px;
-  border:0;
-  border-radius:14px;
-  background:#1f73e0;
-  color:#fff;
-  font-size:22px;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.logout-btn{
-  background:#ef5350;
-  margin-top:12px;
-}
-
-.info{
-  font-size:22px;
-  margin-bottom:18px;
-  line-height:1.8;
-}
-
-.table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:12px;
-}
-
-.table th,
-.table td{
-  border:1px solid #ddd;
-  padding:10px;
-  text-align:center;
-}
-
-.table th{
-  background:#f4f4f4;
-}
-
-.rank1{
-  background:#fff8d6;
-}
-
+body{margin:0;background:#f3f6fb;font-family:"Microsoft JhengHei",Arial,sans-serif;color:#122033}.container{max-width:520px;margin:auto;padding:18px}.card{background:#fff;border-radius:22px;padding:22px;margin-bottom:18px;box-shadow:0 8px 24px rgba(0,0,0,.08)}.title{font-size:30px;font-weight:800;margin-bottom:18px}.input,.select{width:100%;padding:16px;font-size:18px;border:1px solid #ddd;border-radius:14px;box-sizing:border-box;margin-bottom:12px;background:#fff}.btn{width:100%;padding:16px;border:0;border-radius:14px;background:#1f73e0;color:#fff;font-size:18px;font-weight:bold;cursor:pointer;margin-top:10px}.logout-btn{background:#ef4f4f}.dark-btn{background:#374f5a}.purple-btn{background:#6d45d8}.green-btn{background:#159447}.team-btn{background:#fff;color:#122033;border:1px solid #ddd;box-shadow:0 4px 12px rgba(0,0,0,.06)}.info{font-size:19px;margin:10px 0;line-height:1.6}.section-wrap{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px}.panel{border-radius:18px;padding:18px;border:1px solid #ddd}.team-panel{background:#f0fff5;border-color:#9adfb2}.league-panel{background:#fff8ed;border-color:#ffc47a}.panel-title{font-size:22px;font-weight:800;margin-bottom:14px;padding-bottom:10px;border-bottom:3px solid}.team-panel .panel-title{border-color:#159447;color:#0f7d3a}.league-panel .panel-title{border-color:#ff7a00;color:#df5f00}.main-team{text-align:center;font-size:34px;font-weight:900;color:#0f7d3a;margin:12px 0 18px}.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stat-box{background:#fff;border-radius:14px;padding:14px 8px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.06)}.stat-label{font-size:15px;font-weight:700;margin-bottom:8px}.stat-value{font-size:34px;font-weight:900}.team-value{color:#0f7d3a}.league-value{color:#f05a00}.actions{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}.table{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px}.table th,.table td{border:1px solid #ddd;padding:9px 6px;text-align:center}.table th{background:#f4f4f4;font-weight:800}.rank1{background:#fff4c9;font-weight:800}.score-text{color:#f05a00;font-weight:800}.match-card-title{color:#6d45d8;font-size:26px;font-weight:900}.match-table th{background:#6d45d8;color:white}.win-tag,.lose-tag{display:inline-block;padding:4px 10px;border-radius:8px;font-weight:800}.win-tag{color:#0a8f3c;background:#e6f8ec;border:1px solid #72d899}.lose-tag{color:#d93025;background:#fff0f0;border:1px solid #ff9b9b}.schedule-card{border-radius:18px;padding:18px;margin-top:16px;color:white}.upcoming-card{background:linear-gradient(135deg,#4aa3ff,#2563eb)}.live-card{background:linear-gradient(135deg,#ff4d4d,#d62828)}.completed-card{background:linear-gradient(135deg,#13b66b,#0c8a4e)}.schedule-title{font-size:22px;font-weight:900;margin-bottom:14px}.schedule-date{font-size:18px;font-weight:700;margin-bottom:12px}.schedule-match{font-size:24px;font-weight:900;line-height:1.5}.schedule-place{margin-top:14px;font-size:16px}.live-score{font-size:30px;font-weight:900;text-align:center;margin-top:12px}.score-number{font-size:38px;margin:0 6px}.live-status{text-align:center;margin-top:14px;font-size:16px;font-weight:700}.winner-text{margin-top:14px;font-size:18px;font-weight:800}.vs-text{margin:0 8px;opacity:.85}.empty-text{padding:14px;background:#f7f8fb;border-radius:12px;color:#667;text-align:center;font-weight:700}.small{font-size:14px;color:#667;text-align:center;margin-top:12px}.form-grid{display:grid;grid-template-columns:1fr;gap:8px}.form-label{font-size:14px;font-weight:800;margin-top:6px}.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:18px;z-index:999}.modal{background:#fff;border-radius:20px;max-width:520px;width:100%;padding:20px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-height:92vh;overflow:auto}.modal-title{font-size:26px;font-weight:900;margin-bottom:12px}.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media (min-width:768px){.container{max-width:920px}.section-wrap{grid-template-columns:1fr 1fr}.actions{grid-template-columns:1fr 1fr 1fr 1fr 1fr}.form-grid{grid-template-columns:1fr 1fr}.modal{max-width:720px}}
 </style>
 </head>
-
 <body>
-
 <div class="container">
-
   <div id="login-page">
-
     <div class="card">
-
-      <div class="title">
-        🎾 網球聯盟會員登入
-      </div>
-
-      <input
-        id="phone-input"
-        class="input"
-        placeholder="請輸入手機號碼"
-      >
-
-      <button
-        id="login-btn"
-        class="btn">
-        會員驗證登入
-      </button>
-
+      <div class="title">🎾 網球聯盟會員登入</div>
+      <input id="phone-input" class="input" placeholder="請輸入手機號碼">
+      <button id="login-btn" class="btn">會員驗證登入</button>
     </div>
-
   </div>
-
   <div id="member-page" style="display:none;"></div>
+</div>
 
+<div id="create-match-modal" class="modal-mask">
+  <div class="modal">
+    <div class="modal-title">🎾 建立比賽</div>
+    <div class="form-grid">
+      <div><div class="form-label">比賽日期時間</div><input id="cm-date" class="input" type="datetime-local"></div>
+      <div><div class="form-label">比賽場地</div><input id="cm-location" class="input" placeholder="例如：中和網球場"></div>
+      <div><div class="form-label">比賽狀態</div><select id="cm-status" class="select"><option value="未開打">未開打</option><option value="比賽中">比賽中</option><option value="已完成">已完成</option></select></div>
+      <div class="row-2"><div><div class="form-label">A隊比數</div><input id="cm-scoreA" class="input" type="number" placeholder="可空白"></div><div><div class="form-label">B隊比數</div><input id="cm-scoreB" class="input" type="number" placeholder="可空白"></div></div>
+      <div><div class="form-label">A隊參賽者1手機</div><input id="cm-a1" class="input" placeholder="手機號碼"></div>
+      <div><div class="form-label">A隊參賽者2手機</div><input id="cm-a2" class="input" placeholder="手機號碼"></div>
+      <div><div class="form-label">B隊參賽者1手機</div><input id="cm-b1" class="input" placeholder="手機號碼"></div>
+      <div><div class="form-label">B隊參賽者2手機</div><input id="cm-b2" class="input" placeholder="手機號碼"></div>
+    </div>
+    <button class="btn green-btn" id="submit-match-btn">送出建立比賽</button>
+    <button class="btn logout-btn" onclick="closeCreateMatch()">取消</button>
+  </div>
 </div>
 
 <script>
-
-const DOMAIN = 'https://dekt.cybozu.com';
-
-const API_TOKEN = 'kRuyhs6vF5Z9cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
-
-const MEMBER_APP = 178;
-
-const MATCH_APP = 170;
-
-function normalizePhone(value){
-  return String(value || '').replace(/\D/g,'');
-}
-
-async function kintoneGet(url){
-
-async function kintoneGet(url){
-
-  const resp = async function verifyMember(phone){
-
-  const resp =
-    await fetch(
-      `/.netlify/functions/login?phone=${phone}`
-    );
-
-  const data = await resp.json();
-
-  return data.records?.[0] || null;
-}
-    method:'GET',
-    mode:'cors',
-    headers:{
-      'X-Cybozu-API-Token':API_TOKEN,
-      'Content-Type':'application/json'
-    }
-  });
-
-  if(!resp.ok){
-
-    const text = await resp.text();
-
-    console.log(text);
-
-    throw new Error(text);
-  }
-
-  return await resp.json();
-}
-
-  return await resp.json();
-}
-
-async function verifyMember(phone){
-
-  const query =
-    encodeURIComponent(
-      `手機號碼 = "${phone}" and 是否有效 = "Y"`
-    );
-
-  const url =
-    `${DOMAIN}/k/v1/records.json?app=${MEMBER_APP}&query=${query}`;
-
-  const data = await kintoneGet(url);
-
-  return data.records?.[0] || null;
-}
-
-async function getMatches(){
-
-  const url =
-    `${DOMAIN}/k/v1/records.json?app=${MATCH_APP}&query=${encodeURIComponent('limit 500')}`;
-
-  const data = await kintoneGet(url);
-
-  return data.records || [];
-}
-
-function renderMemberPage(name,phone){
-
-  document.getElementById('login-page').style.display='none';
-
-  const page =
-    document.getElementById('member-page');
-
-  page.style.display='block';
-
-  page.innerHTML = `
-
-    <div class="card">
-
-      <div class="title">
-        ${name} 您好 👋
-      </div>
-
-      <div class="info">
-        📱 ${phone}
-      </div>
-
-      <div class="info">
-        🎾 歡迎回到網球聯盟
-      </div>
-
-      <button
-        class="btn logout-btn"
-        id="logout-btn">
-        登出
-      </button>
-
-    </div>
-
-    <div class="card">
-
-      <div class="title">
-        🌐 全聯盟排名 TOP8
-      </div>
-
-      <table class="table">
-
-        <thead>
-          <tr>
-            <th>排名</th>
-            <th>姓名</th>
-            <th>積分</th>
-          </tr>
-        </thead>
-
-        <tbody id="ranking-body">
-        </tbody>
-
-      </table>
-
-    </div>
-
-  `;
-
-  document.getElementById('logout-btn')
-    .onclick = function(){
-
-      localStorage.removeItem('member_phone');
-      localStorage.removeItem('member_name');
-
-      location.reload();
-    };
-
-  loadRanking();
-}
-
-async function loadRanking(){
-
-  const matches = await getMatches();
-
-  const map = {};
-
-  matches.forEach(function(r){
-
-    const fields = [
-
-      {
-        phone:'手機號碼_驗證用_A_參賽者1',
-        name:'參賽者姓名_A_參賽者1',
-        score:'本場積分_A_參賽者1'
-      },
-
-      {
-        phone:'手機號碼_驗證用_A_參賽者2',
-        name:'參賽者姓名_A_參賽者2',
-        score:'本場積分_A_參賽者2'
-      },
-
-      {
-        phone:'手機號碼_驗證用_B_參賽者1',
-        name:'參賽者姓名_B_參賽者1',
-        score:'本場積分_B_參賽者1'
-      },
-
-      {
-        phone:'手機號碼_驗證用_B_參賽者2',
-        name:'參賽者姓名_B_參賽者2',
-        score:'本場積分_B_參賽者2'
-      }
-
-    ];
-
-    fields.forEach(function(f){
-
-      const name =
-        r[f.name]?.value || '';
-
-      const score =
-        Number(r[f.score]?.value || 0);
-
-      if(!name) return;
-
-      if(!map[name]){
-
-        map[name]={
-          name:name,
-          total:0
-        };
-      }
-
-      map[name].total += score;
-
-    });
-
-  });
-
-  const ranking =
-    Object.values(map)
-      .sort((a,b)=>b.total-a.total)
-      .slice(0,8);
-
-  document.getElementById('ranking-body')
-    .innerHTML =
-      ranking.map(function(r,index){
-
-        return `
-          <tr class="${index===0?'rank1':''}">
-            <td>${index+1}</td>
-            <td>${r.name}</td>
-            <td>${r.total}</td>
-          </tr>
-        `;
-      }).join('');
-}
-async function openCreateMatch(){
-
-  const matchDate = prompt(
-    '請輸入比賽日期時間\n例如：2026-05-20 19:00'
-  );
-
-  if(!matchDate) return;
-
-  const location = prompt('請輸入比賽場地');
-
-  if(!location) return;
-
-  const a1Phone = prompt('A隊參賽者1手機');
-
-  if(!a1Phone) return;
-
-  const a2Phone = prompt('A隊參賽者2手機');
-
-  if(!a2Phone) return;
-
-  const b1Phone = prompt('B隊參賽者1手機');
-
-  if(!b1Phone) return;
-
-  const b2Phone = prompt('B隊參賽者2手機');
-
-  if(!b2Phone) return;
-
-  try{
-
-    const response = await fetch(
-      '/.netlify/functions/create-match',
-      {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({
-
-          matchDate,
-          location,
-
-          status:'未開打',
-
-          scoreA:'',
-          scoreB:'',
-
-          a1Phone,
-          a2Phone,
-          b1Phone,
-          b2Phone
-
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    console.log(data);
-
-    if(data.success){
-
-      alert('✅ 比賽建立成功');
-
-    }else{
-
-      alert(
-        '❌ 建立失敗\n' +
-        JSON.stringify(data)
-      );
-
-    }
-
-  }catch(e){
-
-    console.error(e);
-
-    alert('❌ create-match function 錯誤');
-
-  }
-
-}
-document.getElementById('login-btn')
-  .onclick = async function(){
-
-    const phone =
-      normalizePhone(
-        document.getElementById('phone-input').value
-      );
-
-    if(!phone){
-
-      alert('請輸入手機號碼');
-      return;
-    }
-
-    let member = null;
-
-try{
-
-  member = await verifyMember(phone);
-
-}catch(e){
-
-  console.log(e);
-
-  alert('API連線失敗');
-
-  return;
-}
-
-    if(!member){
-
-      alert('驗證失敗');
-      return;
-    }
-
-    const name =
-      member['參賽者姓名'].value;
-
-    localStorage.setItem(
-      'member_phone',
-      phone
-    );
-
-    localStorage.setItem(
-      'member_name',
-      name
-    );
-
-    renderMemberPage(name,phone);
-
-  };
-
-window.onload = function(){
-
-  const phone =
-    localStorage.getItem('member_phone');
-
-  const name =
-    localStorage.getItem('member_name');
-
-  if(phone && name){
-
-    renderMemberPage(name,phone);
-  }
-
-};
-
+const STATUS_FIELD='積分狀態',WINNER_FIELD='比賽勝負',MATCH_STATUS_FIELD='比賽狀態',MATCH_DATE_FIELD='比賽日期時間',MATCH_PLACE_FIELD='比賽場地';
+const DATE_FIELDS=['比賽日期時間','比賽日期','日期','建立時間'];
+const SCORE_FIELDS=['比數','比分','比賽比數','A隊_B隊比數'];
+const PLAYERS=[
+ {phone:'手機號碼_驗證用_A_參賽者1',name:'參賽者姓名_A_參賽者1',team:'代表球隊_A_參賽者1',score:'本場積分_A_參賽者1',side:'A'},
+ {phone:'手機號碼_驗證用_A_參賽者2',name:'參賽者姓名_A_參賽者2',team:'代表球隊_A_參賽者2',score:'本場積分_A_參賽者2',side:'A'},
+ {phone:'手機號碼_驗證用_B_參賽者1',name:'參賽者姓名_B_參賽者1',team:'代表球隊_B_參賽者1',score:'本場積分_B_參賽者1',side:'B'},
+ {phone:'手機號碼_驗證用_B_參賽者2',name:'參賽者姓名_B_參賽者2',team:'代表球隊_B_參賽者2',score:'本場積分_B_參賽者2',side:'B'}
+];
+let currentMember=null,currentMatches=[],currentSelectedTeam='';
+function normalizePhone(v){return String(v||'').replace(/\D/g,'')}
+function getValue(r,f){return r&&r[f]?r[f].value:''}
+function getFirstValue(r,fs){for(const f of fs){const v=getValue(r,f);if(v)return v}return''}
+function toNumber(v){const n=Number(v);return isNaN(n)?0:n}
+function splitTeams(v){return String(v||'').split(/[、,，\s]+/).map(t=>t.trim()).filter(Boolean)}
+async function verifyMember(phone){const resp=await fetch(`/.netlify/functions/login?phone=${encodeURIComponent(phone)}`);const data=await resp.json();if(!resp.ok)throw new Error(data.error||'API連線失敗');return data}
+function isValidStatus(record){const status=getValue(record,STATUS_FIELD);const matchStatus=getValue(record,MATCH_STATUS_FIELD);if(matchStatus&&matchStatus!=='已完成')return false;return status==='先行計分中'||status==='審核通過'||status==='' }
+function getTeamName(record,side){return getValue(record,side==='A'?'代表球隊_A_參賽者1':'代表球隊_B_參賽者1')||'-'}
+function getAScore(record){return getValue(record,'A隊比數')||getValue(record,'A比數')||'0'}
+function getBScore(record){return getValue(record,'B隊比數')||getValue(record,'B比數')||'0'}
+function formatDateTime(v){if(!v)return'-';return String(v).replace('T',' ').slice(0,16)}
+function buildScheduleSections(records){const upcoming=[],live=[],completed=[];records.forEach(record=>{const status=getValue(record,MATCH_STATUS_FIELD);const date=getValue(record,MATCH_DATE_FIELD)||getFirstValue(record,DATE_FIELDS);const item={date:date||'-',place:getValue(record,MATCH_PLACE_FIELD)||'-',aTeam:getTeamName(record,'A'),bTeam:getTeamName(record,'B'),aScore:getAScore(record),bScore:getBScore(record),winner:getValue(record,WINNER_FIELD)||'-'};if(status==='未開打')upcoming.push(item);else if(status==='比賽中')live.push(item);else if(status==='已完成')completed.push(item)});upcoming.sort((a,b)=>String(a.date).localeCompare(String(b.date)));live.sort((a,b)=>String(a.date).localeCompare(String(b.date)));completed.sort((a,b)=>String(b.date).localeCompare(String(a.date)));return{upcoming,live,completed}}
+function renderScheduleCards(data){const up=data.upcoming.slice(0,3).map(i=>`<div class="schedule-card upcoming-card"><div class="schedule-title">📅 即將開打</div><div class="schedule-date">${formatDateTime(i.date)}</div><div class="schedule-match">${i.aTeam}<span class="vs-text">VS</span>${i.bTeam}</div><div class="schedule-place">📍 ${i.place}</div></div>`).join('');const live=data.live.slice(0,3).map(i=>`<div class="schedule-card live-card"><div class="schedule-title">🔴 LIVE 比分</div><div class="live-score">${i.aTeam}<span class="score-number">${i.aScore}</span>:<span class="score-number">${i.bScore}</span>${i.bTeam}</div><div class="live-status">目前進行中</div></div>`).join('');const done=data.completed.slice(0,5).map(i=>`<div class="schedule-card completed-card"><div class="schedule-title">🏆 最新戰績</div><div class="schedule-match">${i.aTeam}<span class="score-number">${i.aScore}</span>:<span class="score-number">${i.bScore}</span>${i.bTeam}</div><div class="winner-text">${i.winner}</div></div>`).join('');return `<div class="card"><div class="title">🏟️ 聯盟賽程資訊</div>${up||''}${live||''}${done||(!up&&!live?'<div class="empty-text">目前尚無賽程資料</div>':'')}</div>`}
+function buildRanking(records){const map={};records.forEach(record=>{if(!isValidStatus(record))return;const winner=getValue(record,WINNER_FIELD);PLAYERS.forEach(p=>{const phone=normalizePhone(getValue(record,p.phone)),name=getValue(record,p.name),team=getValue(record,p.team),score=toNumber(getValue(record,p.score));if(!name||!team)return;const key=phone+'___'+name+'___'+team;if(!map[key])map[key]={phone,name,team,total:0,games:0,win:0,lose:0};map[key].total+=score;map[key].games+=1;const isWin=(winner==='A隊獲勝'&&p.side==='A')||(winner==='B隊獲勝'&&p.side==='B');if(isWin)map[key].win+=1;else map[key].lose+=1})});const arr=Object.values(map);arr.sort((a,b)=>b.total!==a.total?b.total-a.total:b.win!==a.win?b.win-a.win:a.lose-b.lose);arr.forEach((x,i)=>x.rank=i+1);return arr}
+function buildPersonalRanking(ranking){const map={};ranking.forEach(r=>{const key=r.phone||r.name;if(!map[key])map[key]={phone:r.phone,name:r.name,total:0,games:0};map[key].total+=r.total;map[key].games+=r.games});const arr=Object.values(map);arr.sort((a,b)=>b.total-a.total);arr.forEach((r,i)=>r.rank=i+1);return arr}
+function rankLabel(rank){return rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':rank}
+function renderRows(rows,isAllLeague){if(!rows.length)return`<tr><td colspan="5">目前無資料</td></tr>`;return rows.map((r,i)=>{const rank=isAllLeague?r.rank:i+1;return`<tr class="${i===0?'rank1':''}"><td>${rankLabel(rank)}</td><td>${r.name}</td><td>${r.team}</td><td class="score-text">${r.total}</td><td>${r.games}</td></tr>`}).join('')}
+function getMatchDate(record){const raw=getFirstValue(record,DATE_FIELDS);return raw?String(raw).slice(0,10):'-'}
+function getScoreText(record){const direct=getFirstValue(record,SCORE_FIELDS);if(direct)return direct;return getAScore(record)+'-'+getBScore(record)}
+function buildMyMatches(records,phone,name,selectedTeam){const list=[];records.forEach(record=>{if(!isValidStatus(record))return;const winner=getValue(record,WINNER_FIELD);const me=PLAYERS.find(p=>{const pPhone=normalizePhone(getValue(record,p.phone)),pName=getValue(record,p.name),pTeam=getValue(record,p.team);return(pPhone===phone||pName===name)&&(!selectedTeam||pTeam===selectedTeam)});if(!me)return;const mySide=me.side;const partnerNames=PLAYERS.filter(p=>p.side===mySide).map(p=>getValue(record,p.name)).filter(n=>n&&n!==name);const opponentNames=PLAYERS.filter(p=>p.side!==mySide).map(p=>getValue(record,p.name)).filter(Boolean);const myTeam=getValue(record,me.team),myScore=toNumber(getValue(record,me.score));const isWin=(winner==='A隊獲勝'&&mySide==='A')||(winner==='B隊獲勝'&&mySide==='B');list.push({date:getMatchDate(record),team:myTeam,partner:partnerNames.join('、')||'-',opponent:opponentNames.join('、')||'-',score:getScoreText(record),result:isWin?'勝':'負',point:myScore})});list.sort((a,b)=>String(b.date).localeCompare(String(a.date)));return list}
+function renderMatchRows(rows,limit){const showRows=rows.slice(0,limit);if(!showRows.length)return`<tr><td colspan="7">目前尚無比賽紀錄</td></tr>`;return showRows.map(r=>`<tr><td>${r.date}</td><td>${r.team}</td><td>${r.partner}</td><td>${r.opponent}</td><td>${r.score}</td><td><span class="${r.result==='勝'?'win-tag':'lose-tag'}">${r.result}</span></td><td class="score-text">${r.point}</td></tr>`).join('')}
+function renderTeamSelect(member,matches){const name=getValue(member,'參賽者姓名'),phone=getValue(member,'手機號碼'),teamText=getValue(member,'代表球隊'),teams=splitTeams(teamText);document.getElementById('login-page').style.display='none';const page=document.getElementById('member-page');page.style.display='block';if(teams.length<=1){renderMemberHome(member,matches,teams[0]||'');return}page.innerHTML=`<div class="card"><div class="title">${name} 您好 👋</div><div class="info">📱 ${phone}</div><div class="info">請選擇要查看的代表球隊：</div>${teams.map(team=>`<button class="btn team-btn" data-team="${team}">${team}</button>`).join('')}<button class="btn logout-btn" id="logout-btn">登出</button></div>`;document.querySelectorAll('.team-btn').forEach(btn=>btn.onclick=()=>renderMemberHome(member,matches,btn.dataset.team));document.getElementById('logout-btn').onclick=logout}
+function renderMemberHome(member,matches,selectedTeam){currentSelectedTeam=selectedTeam;const name=getValue(member,'參賽者姓名'),phone=normalizePhone(getValue(member,'手機號碼')),teamText=getValue(member,'代表球隊');const ranking=buildRanking(matches),scheduleData=buildScheduleSections(matches);const myRank=ranking.find(r=>(r.phone===phone||r.name===name)&&r.team===selectedTeam);const personalRanking=buildPersonalRanking(ranking);const totalRank=personalRanking.find(r=>r.phone===phone||r.name===name);const teamRows=ranking.filter(r=>r.team===selectedTeam).slice(0,8);const allRows=ranking.slice(0,8);const myMatches=buildMyMatches(matches,phone,name,selectedTeam);const page=document.getElementById('member-page');page.innerHTML=`<div class="card"><div class="title">${name} 您好 👋</div><div class="info">📱 ${phone}</div><div class="info">🎾 登錄球隊：${teamText||'-'}</div><div class="info">🔎 目前代表球隊：<strong>${selectedTeam||'-'}</strong></div><div class="section-wrap"><div class="panel team-panel"><div class="panel-title">👥 代表球隊資訊</div><div class="main-team">${selectedTeam||'-'}</div><div class="stats-grid"><div class="stat-box"><div class="stat-label">🏆 球隊內排名</div><div class="stat-value team-value">#${myRank?myRank.rank:'-'}</div></div><div class="stat-box"><div class="stat-label">⭐ 球隊積分</div><div class="stat-value team-value">${myRank?myRank.total:0}</div></div><div class="stat-box"><div class="stat-label">🎾 球隊出賽場次</div><div class="stat-value team-value">${myRank?myRank.games:0}</div></div><div class="stat-box"><div class="stat-label">👥 球隊成員排名</div><div class="stat-value team-value">#${myRank?teamRows.findIndex(r=>r.name===name)+1:'-'}</div></div></div></div><div class="panel league-panel"><div class="panel-title">🌐 全聯盟資訊</div><div class="stat-box" style="margin-bottom:14px;"><div class="stat-label">🌐 全聯盟總排名</div><div class="stat-value league-value">#${totalRank?totalRank.rank:'-'}</div></div><div class="stat-box"><div class="stat-label">🔥 全聯盟總積分</div><div class="stat-value league-value">${totalRank?totalRank.total:0}</div></div></div></div><div class="actions"><button class="btn dark-btn" id="change-team-btn">切換代表球隊</button><button class="btn" id="toggle-ranking-btn">全聯盟排名查詢</button><button class="btn purple-btn" id="match-record-btn">我的比賽紀錄</button><button class="btn green-btn" id="create-match-btn">🎾 建立比賽</button><button class="btn logout-btn" id="logout-btn">登出</button></div></div>${renderScheduleCards(scheduleData)}<div class="card"><div class="title" id="ranking-title">🥇 ${selectedTeam||''} 球隊 TOP8</div><table class="table"><thead><tr><th>排名</th><th>姓名</th><th>球隊</th><th>積分</th><th>場次</th></tr></thead><tbody id="ranking-body">${renderRows(teamRows,false)}</tbody></table></div><div class="card" id="match-record-section" style="display:none;"><div class="match-card-title">📋 我的比賽紀錄</div><table class="table match-table"><thead><tr><th>日期</th><th>球隊</th><th>搭檔</th><th>對手</th><th>比數</th><th>勝負</th><th>積分</th></tr></thead><tbody id="match-record-body">${renderMatchRows(myMatches,5)}</tbody></table>${myMatches.length>5?`<button class="btn purple-btn" id="show-more-matches-btn">查看更多</button>`:''}<div class="small">* 目前顯示最近比賽紀錄</div></div>`;document.getElementById('logout-btn').onclick=logout;document.getElementById('change-team-btn').onclick=()=>renderTeamSelect(member,matches);document.getElementById('create-match-btn').onclick=openCreateMatch;document.getElementById('match-record-btn').onclick=()=>{const section=document.getElementById('match-record-section');section.style.display=section.style.display==='none'?'block':'none';section.scrollIntoView({behavior:'smooth'})};const moreBtn=document.getElementById('show-more-matches-btn');if(moreBtn){let expanded=false;moreBtn.onclick=()=>{expanded=!expanded;document.getElementById('match-record-body').innerHTML=renderMatchRows(myMatches,expanded?myMatches.length:5);moreBtn.innerHTML=expanded?'收合紀錄':'查看更多'}}let isAll=false;document.getElementById('toggle-ranking-btn').onclick=()=>{const tbody=document.getElementById('ranking-body'),title=document.getElementById('ranking-title'),btn=document.getElementById('toggle-ranking-btn');isAll=!isAll;if(isAll){title.innerHTML='🌐 全聯盟 TOP8';btn.innerHTML='返回球隊排名';tbody.innerHTML=renderRows(allRows,true)}else{title.innerHTML='🥇 '+selectedTeam+' 球隊 TOP8';btn.innerHTML='全聯盟排名查詢';tbody.innerHTML=renderRows(teamRows,false)}}}
+function openCreateMatch(){document.getElementById('create-match-modal').style.display='flex';const now=new Date();now.setMinutes(now.getMinutes()-now.getTimezoneOffset());document.getElementById('cm-date').value=now.toISOString().slice(0,16);document.getElementById('cm-status').value='未開打';const myPhone=localStorage.getItem('member_phone')||'';document.getElementById('cm-a1').value=myPhone}
+function closeCreateMatch(){document.getElementById('create-match-modal').style.display='none'}
+document.getElementById('submit-match-btn').onclick=async function(){const btn=this;const matchDate=document.getElementById('cm-date').value;const location=document.getElementById('cm-location').value.trim();const status=document.getElementById('cm-status').value;const scoreA=document.getElementById('cm-scoreA').value;const scoreB=document.getElementById('cm-scoreB').value;const a1Phone=normalizePhone(document.getElementById('cm-a1').value);const a2Phone=normalizePhone(document.getElementById('cm-a2').value);const b1Phone=normalizePhone(document.getElementById('cm-b1').value);const b2Phone=normalizePhone(document.getElementById('cm-b2').value);if(!matchDate||!location||!a1Phone||!a2Phone||!b1Phone||!b2Phone){alert('請完整填寫比賽日期、場地與四位參賽者手機');return}btn.disabled=true;btn.innerText='建立中...';try{const response=await fetch('/.netlify/functions/create-match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({matchDate,location,status,scoreA,scoreB,a1Phone,a2Phone,b1Phone,b2Phone})});const data=await response.json();console.log(data);if(data.success){alert('✅ 比賽建立成功');closeCreateMatch();location.reload()}else{alert('❌ 建立失敗：\n'+JSON.stringify(data))}}catch(e){console.error(e);alert('❌ create-match function 錯誤')}finally{btn.disabled=false;btn.innerText='送出建立比賽'}};
+function logout(){localStorage.removeItem('member_phone');localStorage.removeItem('member_name');location.reload()}
+document.getElementById('login-btn').onclick=async function(){const btn=document.getElementById('login-btn');const phone=normalizePhone(document.getElementById('phone-input').value);if(!phone){alert('請輸入手機號碼');return}btn.disabled=true;btn.innerText='驗證中...';try{const data=await verifyMember(phone);if(!data.success||!data.records||data.records.length===0){alert('驗證失敗，查無會員資料');return}currentMember=data.records[0];currentMatches=data.matches||[];localStorage.setItem('member_phone',phone);localStorage.setItem('member_name',getValue(currentMember,'參賽者姓名'));renderTeamSelect(currentMember,currentMatches)}catch(e){console.error(e);alert('API連線失敗，請確認 Netlify Function 或 API Token')}finally{btn.disabled=false;btn.innerText='會員驗證登入'}};
+window.onload=function(){const phone=localStorage.getItem('member_phone');if(phone)document.getElementById('phone-input').value=phone};
 </script>
-
 </body>
 </html>
