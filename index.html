@@ -349,7 +349,88 @@ async function loadRanking(){
         `;
       }).join('');
 }
+async function openCreateMatch(){
 
+  const matchDate = prompt(
+    '請輸入比賽日期時間\n例如：2026-05-20 19:00'
+  );
+
+  if(!matchDate) return;
+
+  const location = prompt('請輸入比賽場地');
+
+  if(!location) return;
+
+  const a1Phone = prompt('A隊參賽者1手機');
+
+  if(!a1Phone) return;
+
+  const a2Phone = prompt('A隊參賽者2手機');
+
+  if(!a2Phone) return;
+
+  const b1Phone = prompt('B隊參賽者1手機');
+
+  if(!b1Phone) return;
+
+  const b2Phone = prompt('B隊參賽者2手機');
+
+  if(!b2Phone) return;
+
+  try{
+
+    const response = await fetch(
+      '/.netlify/functions/create-match',
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+
+          matchDate,
+          location,
+
+          status:'未開打',
+
+          scoreA:'',
+          scoreB:'',
+
+          a1Phone,
+          a2Phone,
+          b1Phone,
+          b2Phone
+
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    if(data.success){
+
+      alert('✅ 比賽建立成功');
+
+    }else{
+
+      alert(
+        '❌ 建立失敗\n' +
+        JSON.stringify(data)
+      );
+
+    }
+
+  }catch(e){
+
+    console.error(e);
+
+    alert('❌ create-match function 錯誤');
+
+  }
+
+}
 document.getElementById('login-btn')
   .onclick = async function(){
 
