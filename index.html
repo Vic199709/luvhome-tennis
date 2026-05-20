@@ -730,8 +730,45 @@ document.getElementById(
   renderMemberHome(member);
 
 };
+ 
+</script>
+};
+
+window.openCreateMatch = function(){
+
+  const modal =
+    document.getElementById('create-match-modal');
+
+  if(modal){
+    modal.style.display = 'flex';
+  }
+
+  const pageText =
+    document.body.innerText || '';
+
+  const phoneMatch =
+    pageText.match(/09\d{8}/);
+
+  const loginPhone =
+    phoneMatch ? phoneMatch[0] : '';
+
+  if(loginPhone){
+
+    const a1Input =
+      document.getElementById('a1-phone');
+
+    if(a1Input){
+      a1Input.value = loginPhone;
+    }
+
+    if(typeof loadMemberInfo === 'function'){
+      loadMemberInfo('a1-phone','a1-info');
+    }
+
+  }
+
+};
 
 </script>
-
 </body>
 </html>
