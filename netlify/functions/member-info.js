@@ -24,16 +24,40 @@ exports.handler = async (event) => {
 
     const data = await response.json();
 
-    const record = (data.records || []).find(r => {
-      const p1 = String(r['參賽者手機']?.value || '').replace(/\D/g, '');
-      const p2 = String(r['手機號碼']?.value || '').replace(/\D/g, '');
-      return p1 === phone || p2 === phone;
+    if (!response.ok) {
+      return json({
+        success: false,
+        message: 'App171查詢失敗',
+        detail: data
+      });
+    }
+
+    const records = data.records || [];
+
+    const record = records.find(r => {
+      const phones = [
+        r['參賽者手機']?.value,
+        r['手機號碼']?.value,
+        r['手機']?.value,
+        r['聯絡電話']?.value
+      ].map(v => String(v || '').replace(/\D/g, ''));
+
+      return phones.includes(phone);
     });
 
     if (!record) {
       return json({
         success: false,
-        message: '查無會員'
+        message: '查無會員',
+        inputPhone: phone,
+        totalRecords: records.length,
+        samplePhones: records.slice(0, 10).map(r => ({
+          name: r['參賽者姓名']?.value || '',
+          參賽者手機: r['參賽者手機']?.value || '',
+          手機號碼: r['手機號碼']?.value || '',
+          手機: r['手機']?.value || '',
+          fields: Object.keys(r)
+        }))
       });
     }
 
@@ -49,7 +73,11 @@ exports.handler = async (event) => {
     return json({
       success: true,
       member: {
-        phone: record['參賽者手機']?.value || record['手機號碼']?.value || '',
+        phone:
+          record['參賽者手機']?.value ||
+          record['手機號碼']?.value ||
+          record['手機']?.value ||
+          '',
         name: record['參賽者姓名']?.value || '',
         age:
           record['年齡']?.value ||
