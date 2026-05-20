@@ -290,13 +290,6 @@ tr.first {
 </div>
 
 <script>
-const members = [
-  {
-    name: "陳志勇",
-    phone: "0932028517",
-    teams: ["國防", "育友", "錦和", "綠寶石"]
-  }
-];
 
 const rankings = [
   { name: "洪啟峰", team: "育友", score: 46, matches: 6 },
@@ -313,16 +306,45 @@ let currentMember = null;
 let currentTeam = null;
 let showingLeague = false;
 
-function login() {
-  const phone = document.getElementById("phoneInput").value.trim();
-  const member = members.find(m => m.phone === phone);
+async function login() {
+  const phone = document.getElementById("phoneInput").value.replace(/\D/g, "");
 
-  if (!member) {
-    alert("查無會員資料，請確認手機號碼");
+  if (!phone) {
+    alert("請輸入手機號碼");
     return;
   }
 
-  currentMember = member;
+  const res = await fetch(`/.netlify/functions/member-info?phone=${encodeURIComponent(phone)}`);
+  const data = await res.json();
+
+  if (!data.ok) {
+    alert(data.message || "查無會員資料，請確認手機號碼");
+    return;
+  }
+
+  currentMember = {
+    name: data.name,
+    phone: data.phone,
+    teams: data.teams
+  };
+
+  document.getElementById("loginView").classList.add("hidden");
+  document.getElementById("teamSelectView").classList.remove("hidden");
+
+  document.getElementById("welcomeText").innerText = `${currentMember.name} 您好 👋`;
+  document.getElementById("phoneText").innerText = `📱 ${currentMember.phone}`;
+
+  const teamButtons = document.getElementById("teamButtons");
+  teamButtons.innerHTML = "";
+
+  currentMember.teams.forEach(team => {
+    const btn = document.createElement("button");
+    btn.className = "team-btn";
+    btn.innerText = team;
+    btn.onclick = () => selectTeam(team);
+    teamButtons.appendChild(btn);
+  });
+}
 
   document.getElementById("loginView").classList.add("hidden");
   document.getElementById("teamSelectView").classList.remove("hidden");
