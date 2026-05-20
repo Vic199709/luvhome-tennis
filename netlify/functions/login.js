@@ -1,83 +1,86 @@
-exports.handler = async function(event) {
-  const DOMAIN = 'https://dekt.cybozu.com';
+exports.handler = async (event) => {
 
-  const MEMBER_APP_ID = '178';
-  const MATCH_APP_ID = '170';
+  try{
 
-  const APP178_API_TOKEN = 'kRuyhs6vF5Z9cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
-const APP170_API_TOKEN = '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
+    const phone =
+      (event.queryStringParameters.phone || '')
+      .replace(/-/g,'')
+      .trim();
 
-  const phone = event.queryStringParameters.phone || '';
+    const members = [
 
-  async function getRecords(appId, token, query) {
-    const url =
-      DOMAIN +
-      '/k/v1/records.json?app=' +
-      appId +
-      '&query=' +
-      encodeURIComponent(query);
+      {
+        phone:'0932028517',
+        name:'陳志勇',
+        age:61,
+        teams:['國防','育友','錦和','綠寶石']
+      },
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'X-Cybozu-API-Token': token
+      {
+        phone:'0905768683',
+        name:'王紹為',
+        age:47,
+        teams:['錦和']
+      },
+
+      {
+        phone:'0970516416',
+        name:'洪啟峰',
+        age:45,
+        teams:['育友']
+      },
+
+      {
+        phone:'0987654321',
+        name:'Lina',
+        age:66,
+        teams:['大墩']
       }
-    });
 
-    const data = await response.json();
+    ];
 
-    if (!response.ok) {
-      throw new Error(data.message || 'Kintone API error');
-    }
-
-    return data.records || [];
-  }
-
-  try {
-    const memberRecords = await getRecords(
-      MEMBER_APP_ID,
-      APP178_API_TOKEN,
-      '手機號碼 = "' + phone + '"'
-    );
-
-    if (memberRecords.length === 0) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: false,
-          records: [],
-          matches: []
-        })
-      };
-    }
-
-    const matchRecords = await getRecords(
-      MATCH_APP_ID,
-      APP170_API_TOKEN,
-      'limit 500'
-    );
+    const member =
+      members.find(
+        m => m.phone === phone
+      );
 
     return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        success: true,
-        records: memberRecords,
-        matches: matchRecords
+
+      statusCode:200,
+
+      headers:{
+        'Content-Type':'application/json'
+      },
+
+      body:JSON.stringify({
+
+        success:!!member,
+
+        member:member || null
+
       })
+
     };
 
-  } catch (error) {
+  }catch(error){
+
     return {
-      statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-        records: [],
-        matches: []
+
+      statusCode:500,
+
+      headers:{
+        'Content-Type':'application/json'
+      },
+
+      body:JSON.stringify({
+
+        success:false,
+        error:error.message
+
       })
+
     };
+
   }
+
 };
