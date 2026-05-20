@@ -26,160 +26,55 @@ body{
   background:#fff;
   border-radius:20px;
   padding:24px;
-  margin-bottom:20px;
+  margin-top:40px;
   box-shadow:0 8px 24px rgba(0,0,0,.08);
 }
 
 .title{
-  font-size:30px;
-  font-weight:800;
-  margin-bottom:18px;
+  font-size:42px;
+  font-weight:900;
+  margin-bottom:24px;
 }
 
-.input{
+input{
   width:100%;
   box-sizing:border-box;
-  padding:18px;
+  border:1px solid #d9dee8;
   border-radius:14px;
-  border:1px solid #d7dce5;
-  font-size:18px;
+  padding:16px;
+  font-size:20px;
+  margin-bottom:16px;
 }
 
-.btn{
+button{
   width:100%;
   border:none;
   border-radius:14px;
   padding:18px;
-  margin-top:14px;
-  color:#fff;
-  font-size:18px;
-  font-weight:700;
+  font-size:24px;
+  font-weight:800;
   cursor:pointer;
 }
 
-.blue-btn{
-  background:#2f73da;
+.primary{
+  background:#2f73d9;
+  color:#fff;
 }
 
-.red-btn{
+.green{
+  background:#1fa542;
+  color:#fff;
+}
+
+.red{
   background:#f25555;
+  color:#fff;
 }
 
-.green-btn{
-  background:#1c9c42;
-}
-
-.dark-btn{
-  background:#394d5b;
-}
-
-.purple-btn{
-  background:#6d46d9;
-}
-
-.section-title{
-  font-size:18px;
-  font-weight:700;
-  margin-bottom:14px;
-}
-
-.info{
-  margin-bottom:14px;
-  font-size:17px;
-}
-
-.match-box{
-  background:#fff;
-  border-radius:18px;
-  padding:18px;
-  margin-bottom:16px;
-  box-shadow:0 5px 15px rgba(0,0,0,.05);
-}
-
-.grid{
+.row{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:12px;
-}
-
-.small-card{
-  background:#f7f7f7;
-  border-radius:16px;
-  padding:18px;
-  text-align:center;
-}
-
-.big{
-  font-size:28px;
-  font-weight:800;
-  margin-top:10px;
-}
-
-.team-green{
-  background:#edf9f1;
-  border:1px solid #93d9a7;
-}
-
-.team-orange{
-  background:#fff7ed;
-  border:1px solid #f5b466;
-}
-
-.line-green{
-  border-bottom:3px solid #13a03d;
-  padding-bottom:10px;
-  margin-bottom:16px;
-}
-
-.line-orange{
-  border-bottom:3px solid #ff7a00;
-  padding-bottom:10px;
-  margin-bottom:16px;
-}
-
-.team-name{
-  text-align:center;
-  font-size:28px;
-  font-weight:800;
-  color:#13873d;
-  margin-bottom:16px;
-}
-
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:18px;
-}
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  overflow:hidden;
-  border-radius:14px;
-}
-
-th,td{
-  border:1px solid #ececec;
-  padding:12px;
-  text-align:center;
-}
-
-th{
-  background:#fafafa;
-}
-
-.top1{
-  background:#fff6d9;
-}
-
-.top2{
-  background:#f2f2f2;
-}
-
-.top3{
-  background:#ffe9d6;
+  gap:16px;
 }
 
 .modal{
@@ -187,63 +82,34 @@ th{
   inset:0;
   background:rgba(0,0,0,.45);
   display:none;
-  justify-content:center;
   align-items:center;
+  justify-content:center;
+  padding:20px;
   z-index:999;
 }
 
 .modal-content{
-  width:92%;
-  max-width:680px;
   background:#fff;
+  width:100%;
+  max-width:680px;
   border-radius:24px;
-  padding:24px;
+  padding:28px;
 }
 
-.modal-title{
-  font-size:34px;
-  font-weight:800;
-  margin-bottom:24px;
-}
-
-.field{
-  margin-bottom:16px;
-}
-
-.label{
-  margin-bottom:8px;
-  font-weight:700;
-}
-
-.row{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:14px;
-}
-
-.member-box{
-  background:#f7f9fc;
+.info-box{
+  background:#f3f5f9;
   border-radius:14px;
-  padding:12px;
-  margin-top:10px;
-  font-size:15px;
-  line-height:1.8;
+  padding:14px;
+  margin-top:-6px;
+  margin-bottom:16px;
+  font-size:18px;
+  line-height:1.7;
 }
 
 .error{
-  color:#d60000;
+  color:#e53935;
   font-weight:700;
-  margin-top:12px;
-}
-
-.success{
-  color:#0f8b35;
-  font-weight:700;
-  margin-top:12px;
-}
-
-.hidden{
-  display:none;
+  margin:12px 0;
 }
 
 </style>
@@ -255,18 +121,15 @@ th{
 
   <div class="card" id="login-card">
 
-    <div class="title">
-      🎾 網球聯盟會員登入
-    </div>
+    <div class="title">🎾 網球聯盟會員登入</div>
 
     <input
-      class="input"
       id="phone-input"
       placeholder="請輸入手機號碼"
     >
 
     <button
-      class="btn blue-btn"
+      class="primary"
       id="login-btn"
     >
       會員驗證登入
@@ -274,117 +137,82 @@ th{
 
   </div>
 
-  <div id="member-home"></div>
+  <div
+    class="card"
+    id="member-home"
+    style="display:none;"
+  ></div>
 
 </div>
 
-<!-- 建立比賽視窗 -->
-
-<div class="modal" id="create-match-modal">
+<div
+  class="modal"
+  id="create-match-modal"
+>
 
   <div class="modal-content">
 
-    <div class="modal-title">
-      🎾 建立比賽
-    </div>
+    <div class="title">🎾 建立比賽</div>
 
     <div class="row">
 
-      <div class="field">
-        <div class="label">比賽日期時間</div>
-
-        <input
-          type="datetime-local"
-          class="input"
-          id="match-date"
-        >
+      <div>
+        <label>比賽日期時間</label>
+        <input type="datetime-local">
       </div>
 
-      <div class="field">
-        <div class="label">比賽場地</div>
-
-        <input
-          class="input"
-          id="match-location"
-          placeholder="例如：錦和網球場"
-        >
+      <div>
+        <label>比賽場地</label>
+        <input placeholder="例如：錦和網球場">
       </div>
 
     </div>
 
     <div class="row">
 
-      <div class="field">
-        <div class="label">A隊參賽者1手機</div>
-
-        <input
-          class="input"
-          id="a1-phone"
-        >
-
-        <div class="member-box hidden" id="a1-info"></div>
+      <div>
+        <label>A隊參賽者1手機</label>
+        <input id="a1-phone">
+        <div class="info-box" id="a1-info"></div>
       </div>
 
-      <div class="field">
-        <div class="label">A隊參賽者2手機</div>
-
-        <input
-          class="input"
-          id="a2-phone"
-        >
-
-        <div class="member-box hidden" id="a2-info"></div>
+      <div>
+        <label>A隊參賽者2手機</label>
+        <input id="a2-phone">
+        <div class="info-box" id="a2-info"></div>
       </div>
 
     </div>
 
     <div class="row">
 
-      <div class="field">
-        <div class="label">B隊參賽者1手機</div>
-
-        <input
-          class="input"
-          id="b1-phone"
-        >
-
-        <div class="member-box hidden" id="b1-info"></div>
+      <div>
+        <label>B隊參賽者1手機</label>
+        <input id="b1-phone">
+        <div class="info-box" id="b1-info"></div>
       </div>
 
-      <div class="field">
-        <div class="label">B隊參賽者2手機</div>
-
-        <input
-          class="input"
-          id="b2-phone"
-        >
-
-        <div class="member-box hidden" id="b2-info"></div>
+      <div>
+        <label>B隊參賽者2手機</label>
+        <input id="b2-phone">
+        <div class="info-box" id="b2-info"></div>
       </div>
 
     </div>
 
     <div
-      class="error hidden"
+      class="error"
       id="age-error"
     ></div>
 
-    <div
-      class="success hidden"
-      id="create-success"
-    >
-      ✅ 建立成功
-    </div>
-
-    <button
-      class="btn green-btn"
-      onclick="submitCreateMatch()"
-    >
+    <button class="green">
       建立比賽
     </button>
 
+    <br><br>
+
     <button
-      class="btn red-btn"
+      class="red"
       onclick="closeCreateMatch()"
     >
       取消
@@ -396,77 +224,113 @@ th{
 
 <script>
 
-const API_BASE =
-  '/.netlify/functions';
-
-function normalizePhone(phone){
-
-  return String(phone || '')
-    .replace(/-/g,'')
-    .trim();
-
-}
+let currentMember = null;
 
 async function verifyMember(phone){
 
-  const response = await fetch(
-    API_BASE +
-    '/login?phone=' +
-    encodeURIComponent(phone)
-  );
+  try{
 
-  const data = await response.json();
+    const res =
+      await fetch(
+        '/.netlify/functions/login?phone=' +
+        phone
+      );
 
-  if(!data.success){
+    const data =
+      await res.json();
+
+    if(data.success){
+      return data.member;
+    }
+
     return null;
+
+  }catch(e){
+
+    return null;
+
   }
 
-  return data.member;
+}
+
+async function getMemberInfo(phone){
+
+  try{
+
+    const res =
+      await fetch(
+        '/.netlify/functions/member-info?phone=' +
+        phone
+      );
+
+    const data =
+      await res.json();
+
+    if(data.success){
+      return data.member;
+    }
+
+    return null;
+
+  }catch(e){
+
+    return null;
+
+  }
 
 }
 
 function renderMemberHome(member){
 
+  currentMember = member;
+
   document.getElementById(
     'login-card'
-  ).style.display='none';
+  ).style.display = 'none';
+
+  document.getElementById(
+    'member-home'
+  ).style.display = 'block';
 
   document.getElementById(
     'member-home'
   ).innerHTML = `
 
-    <div class="card">
+    <div style="font-size:52px;font-weight:900;">
+      ${member.name} 您好 👋
+    </div>
 
-      <div class="title">
-        ${member.name} 您好 👋
-      </div>
+    <div style="margin-top:18px;font-size:24px;">
+      📱 ${member.phone}
+    </div>
 
-      <div class="info">
-        📱 ${member.phone}
-      </div>
+    <div style="margin-top:18px;font-size:24px;">
+      🎾 登錄球隊：
+      ${member.teams.join('、')}
+    </div>
 
-      <div class="info">
-        🎾 登錄球隊：
-        ${member.teams.join('、')}
-      </div>
+    <div
+      style="
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:16px;
+        margin-top:32px;
+      "
+    >
 
-      <div class="actions">
+      <button
+        class="primary"
+        onclick="openCreateMatch()"
+      >
+        🎾 建立比賽
+      </button>
 
-        <button
-          class="btn dark-btn"
-          onclick="openCreateMatch()"
-        >
-          🎾 建立比賽
-        </button>
-
-        <button
-          class="btn red-btn"
-          onclick="logout()"
-        >
-          登出
-        </button>
-
-      </div>
+      <button
+        class="red"
+        onclick="location.reload()"
+      >
+        登出
+      </button>
 
     </div>
 
@@ -474,9 +338,104 @@ function renderMemberHome(member){
 
 }
 
-function logout(){
+async function loadMemberInfo(inputId,infoId){
 
-  location.reload();
+  const phone =
+    document.getElementById(inputId)
+    .value
+    .trim();
+
+  if(!phone){
+
+    document.getElementById(
+      infoId
+    ).innerHTML = '';
+
+    return null;
+
+  }
+
+  const member =
+    await getMemberInfo(phone);
+
+  if(!member){
+
+    document.getElementById(
+      infoId
+    ).innerHTML =
+      '查無會員';
+
+    return null;
+
+  }
+
+  document.getElementById(
+    infoId
+  ).innerHTML = `
+
+    👤 ${member.name}<br>
+    🎂 ${member.age}歲<br>
+    🎾 ${member.teams.join('、')}
+
+  `;
+
+  validateAge();
+
+  return member;
+
+}
+
+async function validateAge(){
+
+  const ids = [
+    'a1-phone',
+    'a2-phone',
+    'b1-phone',
+    'b2-phone'
+  ];
+
+  let members = [];
+
+  for(const id of ids){
+
+    const phone =
+      document.getElementById(id)?.value
+      ?.trim();
+
+    if(phone){
+
+      const member =
+        await getMemberInfo(phone);
+
+      if(member){
+        members.push(member);
+      }
+
+    }
+
+  }
+
+  const aAge =
+    (parseInt(members[0]?.age)||0) +
+    (parseInt(members[1]?.age)||0);
+
+  const bAge =
+    (parseInt(members[2]?.age)||0) +
+    (parseInt(members[3]?.age)||0);
+
+  let msg = '';
+
+  if(aAge && aAge < 100){
+    msg += '❌ A隊年齡總和不足100<br>';
+  }
+
+  if(bAge && bAge < 100){
+    msg += '❌ B隊年齡總和不足100';
+  }
+
+  document.getElementById(
+    'age-error'
+  ).innerHTML = msg;
 
 }
 
@@ -484,7 +443,21 @@ function openCreateMatch(){
 
   document.getElementById(
     'create-match-modal'
-  ).style.display='flex';
+  ).style.display = 'flex';
+
+  if(currentMember){
+
+    document.getElementById(
+      'a1-phone'
+    ).value =
+      currentMember.phone;
+
+    loadMemberInfo(
+      'a1-phone',
+      'a1-info'
+    );
+
+  }
 
 }
 
@@ -492,226 +465,50 @@ function closeCreateMatch(){
 
   document.getElementById(
     'create-match-modal'
-  ).style.display='none';
+  ).style.display = 'none';
 
 }
 
-async function loadMemberInfo(
-  inputId,
-  boxId
-){
+[
+  ['a1-phone','a1-info'],
+  ['a2-phone','a2-info'],
+  ['b1-phone','b1-info'],
+  ['b2-phone','b2-info']
+].forEach(arr=>{
 
-  const phone =
-    normalizePhone(
-      document.getElementById(inputId).value
-    );
+  document.addEventListener(
+    'input',
+    async function(e){
 
-  if(!phone){
-    return null;
-  }
+      if(
+        e.target.id === arr[0]
+      ){
 
-  const member =
-    await verifyMember(phone);
+        await loadMemberInfo(
+          arr[0],
+          arr[1]
+        );
 
-  const box =
-    document.getElementById(boxId);
-
-  if(!member){
-
-    box.classList.remove('hidden');
-
-    box.innerHTML =
-      '❌ 找不到會員';
-
-    return null;
-
-  }
-
-  box.classList.remove('hidden');
-
-  box.innerHTML = `
-    👤 ${member.name}<br>
-    🎂 ${member.age}歲<br>
-    🎾 ${member.teams.join('、')}
-  `;
-
-  return member;
-
-}
-
-async function submitCreateMatch(){
-
-  const ageError =
-    document.getElementById('age-error');
-
-  ageError.classList.add('hidden');
-
-  const a1 =
-    await loadMemberInfo(
-      'a1-phone',
-      'a1-info'
-    );
-
-  const a2 =
-    await loadMemberInfo(
-      'a2-phone',
-      'a2-info'
-    );
-
-  const b1 =
-    await loadMemberInfo(
-      'b1-phone',
-      'b1-info'
-    );
-
-  const b2 =
-    await loadMemberInfo(
-      'b2-phone',
-      'b2-info'
-    );
-
-  if(!a1 || !a2 || !b1 || !b2){
-
-    ageError.classList.remove('hidden');
-
-    ageError.innerHTML =
-      '❌ 有參賽者不存在';
-
-    return;
-
-  }
-
-  const aAge =
-    Number(a1.age || 0) +
-    Number(a2.age || 0);
-
-  const bAge =
-    Number(b1.age || 0) +
-    Number(b2.age || 0);
-
-  if(aAge < 100){
-
-    ageError.classList.remove('hidden');
-
-    ageError.innerHTML =
-      '❌ A隊年齡總和不足100';
-
-    return;
-
-  }
-
-  if(bAge < 100){
-
-    ageError.classList.remove('hidden');
-
-    ageError.innerHTML =
-      '❌ B隊年齡總和不足100';
-
-    return;
-
-  }
-
-  const response = await fetch(
-
-    API_BASE + '/create-match',
-
-    {
-
-      method:'POST',
-
-      headers:{
-        'Content-Type':'application/json'
-      },
-
-      body:JSON.stringify({
-
-        matchDate:
-          document.getElementById(
-            'match-date'
-          ).value,
-
-        location:
-          document.getElementById(
-            'match-location'
-          ).value,
-
-        status:'未開打',
-
-        scoreA:'',
-        scoreB:'',
-
-        a1Phone:
-          normalizePhone(
-            document.getElementById(
-              'a1-phone'
-            ).value
-          ),
-
-        a2Phone:
-          normalizePhone(
-            document.getElementById(
-              'a2-phone'
-            ).value
-          ),
-
-        b1Phone:
-          normalizePhone(
-            document.getElementById(
-              'b1-phone'
-            ).value
-          ),
-
-        b2Phone:
-          normalizePhone(
-            document.getElementById(
-              'b2-phone'
-            ).value
-          )
-
-      })
+      }
 
     }
 
   );
 
-  const data =
-    await response.json();
-
-  if(data.success){
-
-    document
-      .getElementById(
-        'create-success'
-      )
-      .classList.remove('hidden');
-
-  }else{
-
-    ageError.classList.remove('hidden');
-
-    ageError.innerHTML =
-      '❌ ' +
-      (data.message || '建立失敗');
-
-  }
-
-}
+});
 
 document.getElementById(
   'login-btn'
 ).onclick = async function(){
 
   const phone =
-    normalizePhone(
-      document.getElementById(
-        'phone-input'
-      ).value
-    );
+    document.getElementById(
+      'phone-input'
+    ).value.trim();
 
   if(!phone){
 
     alert('請輸入手機號碼');
-
     return;
 
   }
@@ -722,7 +519,6 @@ document.getElementById(
   if(!member){
 
     alert('查無會員');
-
     return;
 
   }
@@ -730,45 +526,8 @@ document.getElementById(
   renderMemberHome(member);
 
 };
- 
-</script>
-};
-
-window.openCreateMatch = function(){
-
-  const modal =
-    document.getElementById('create-match-modal');
-
-  if(modal){
-    modal.style.display = 'flex';
-  }
-
-  const pageText =
-    document.body.innerText || '';
-
-  const phoneMatch =
-    pageText.match(/09\d{8}/);
-
-  const loginPhone =
-    phoneMatch ? phoneMatch[0] : '';
-
-  if(loginPhone){
-
-    const a1Input =
-      document.getElementById('a1-phone');
-
-    if(a1Input){
-      a1Input.value = loginPhone;
-    }
-
-    if(typeof loadMemberInfo === 'function'){
-      loadMemberInfo('a1-phone','a1-info');
-    }
-
-  }
-
-};
 
 </script>
+
 </body>
 </html>
