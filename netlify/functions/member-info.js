@@ -1,156 +1,80 @@
 exports.handler = async (event) => {
+  const DOMAIN = 'https://dekt.cybozu.com';
+  const APP_ID = '171';
+  const API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
 
-  const DOMAIN =
-    'https://dekt.cybozu.com';
-
-  const APP_ID =
-    '171';
-
-  const API_TOKEN =
-    '26RM9maYPix3AtAHjWe46JZ6bBHCdxqxKzfUOc5x';
-
-  try{
-
-    const phone =
-      String(
-        event.queryStringParameters?.phone || ''
-      )
-      .replace(/\D/g,'')
+  try {
+    const phone = String(event.queryStringParameters?.phone || '')
+      .replace(/\D/g, '')
       .trim();
-
-    if(!phone){
-
-      return json({
-        success:false,
-        message:'未輸入手機號碼'
-      });
-
-    }
 
     const url =
       DOMAIN +
       '/k/v1/records.json?app=' +
       APP_ID +
       '&query=' +
-      encodeURIComponent(
-        `手機號碼 = "${phone}"`
-      );
+      encodeURIComponent('order by $id desc limit 500');
 
-    const response =
-      await fetch(url,{
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'X-Cybozu-API-Token': API_TOKEN
+      }
+    });
 
-        method:'GET',
+    const data = await response.json();
 
-        headers:{
-          'X-Cybozu-API-Token':API_TOKEN
-        }
+    const record = (data.records || []).find(r => {
+      const p1 = String(r['參賽者手機']?.value || '').replace(/\D/g, '');
+      const p2 = String(r['手機號碼']?.value || '').replace(/\D/g, '');
+      return p1 === phone || p2 === phone;
+    });
 
-      });
-
-    const data =
-      await response.json();
-
-    if(!response.ok){
-
+    if (!record) {
       return json({
-
-        success:false,
-        message:'App171查詢失敗',
-        detail:data
-
+        success: false,
+        message: '查無會員'
       });
-
     }
 
-    const records =
-      data.records || [];
+    const teamText = String(record['代表球隊']?.value || '');
 
-    if(records.length === 0){
-
-      return json({
-
-        success:false,
-        message:'查無選手'
-
-      });
-
-    }
-
-    const r =
-      records[0];
-
-    const teamText =
-      String(
-        r['代表球隊']?.value || ''
-      );
-
-    const teams =
-      teamText
-      .replace(/,/g,'、')
-      .replace(/，/g,'、')
+    const teams = teamText
+      .replace(/,/g, '、')
+      .replace(/，/g, '、')
       .split('、')
       .map(t => t.trim())
       .filter(Boolean);
 
-    const age =
-
-      r['年齡']?.value ||
-
-      r['驗證年齡']?.value ||
-
-      r['年齡_數值']?.value ||
-
-      '';
-
-    const member = {
-
-      phone:
-        r['手機號碼']?.value || '',
-
-      name:
-        r['參賽者姓名']?.value || '',
-
-      age:
-        age,
-
-      teams:
+    return json({
+      success: true,
+      member: {
+        phone: record['參賽者手機']?.value || record['手機號碼']?.value || '',
+        name: record['參賽者姓名']?.value || '',
+        age:
+          record['年齡']?.value ||
+          record['驗證年齡']?.value ||
+          record['年齡_數值']?.value ||
+          '',
         teams
-
-    };
-
-    return json({
-
-      success:true,
-      member
-
+      }
     });
 
-  }catch(error){
-
+  } catch (error) {
     return json({
-
-      success:false,
-      message:'member-info function error',
-      error:error.message
-
+      success: false,
+      message: 'member-info error',
+      error: error.message
     });
-
   }
-
 };
 
-function json(body){
-
+function json(body) {
   return {
-
-    statusCode:200,
-
-    headers:{
-      'Content-Type':'application/json'
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json'
     },
-
-    body:JSON.stringify(body)
-
+    body: JSON.stringify(body)
   };
-
 }
