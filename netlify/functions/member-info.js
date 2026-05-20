@@ -4,13 +4,14 @@ exports.handler = async (event) => {
 
   const APP_ID = '171';
 
-  const API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BElFj';
+  const API_TOKEN = 'v3A8Y35TO1M7hh2KPcHHK1s8xUFZjS8tDs1BEIFj';
 
   const SUBDOMAIN = 'dekt';
 
   try {
 
-    const query = encodeURIComponent(`參賽者手機 = "${phone}"`);
+    const query =
+      encodeURIComponent(`參賽者手機 = "${phone}"`);
 
     const response = await fetch(
       `https://${SUBDOMAIN}.cybozu.com/k/v1/records.json?app=${APP_ID}&query=${query}`,
@@ -24,10 +25,7 @@ exports.handler = async (event) => {
 
     const data = await response.json();
 
-    console.log(data);
-
     if (!data.records || data.records.length === 0) {
-
       return {
         statusCode: 200,
         body: JSON.stringify({
@@ -35,10 +33,13 @@ exports.handler = async (event) => {
           message: '查無會員'
         })
       };
-
     }
 
     const record = data.records[0];
+
+    const teams = Array.isArray(record['代表球隊']?.value)
+      ? record['代表球隊'].value
+      : [];
 
     return {
       statusCode: 200,
@@ -48,7 +49,8 @@ exports.handler = async (event) => {
           phone: record['參賽者手機']?.value || '',
           name: record['參賽者姓名']?.value || '',
           age: record['驗證年齡']?.value || '',
-          team: record['代表球隊']?.value?.join('、') || ''
+          teams: teams,
+          team: teams.join('、')
         }
       })
     };
