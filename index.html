@@ -346,24 +346,6 @@ async function login() {
   });
 }
 
-  document.getElementById("loginView").classList.add("hidden");
-  document.getElementById("teamSelectView").classList.remove("hidden");
-
-  document.getElementById("welcomeText").innerText = `${member.name} 您好 👋`;
-  document.getElementById("phoneText").innerText = `📱 ${member.phone}`;
-
-  const teamButtons = document.getElementById("teamButtons");
-  teamButtons.innerHTML = "";
-
-  member.teams.forEach(team => {
-    const btn = document.createElement("button");
-    btn.className = "team-btn";
-    btn.innerText = team;
-    btn.onclick = () => selectTeam(team);
-    teamButtons.appendChild(btn);
-  });
-}
-
 function selectTeam(team) {
   currentTeam = team;
   showingLeague = false;
