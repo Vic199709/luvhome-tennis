@@ -2,8 +2,91 @@ exports.handler = async (event) => {
 
   try{
 
+    const phone =
+      (event.queryStringParameters.phone || '')
+      .replace(/-/g,'')
+      .trim();
+
+    // ===== Kintone設定 =====
+
+    const DOMAIN =
+      'dekt.cybozu.com';
+
+    const APP_ID =
+      '178';
+
+    const API_TOKEN =
+      'kRuyhs6vF5Z9cQPzBg2LyDQXhYPdGFs3nVLhaLGH';
+
+    // =====================
+
+    const query =
+      encodeURIComponent(
+        `手機號碼 = "${phone}"`
+      );
+
+    const response =
+      await fetch(
+
+        `https://${DOMAIN}/k/v1/records.json?app=${APP_ID}&query=${query}`,
+
+        {
+
+          method:'GET',
+
+          headers:{
+            'X-Cybozu-API-Token':API_TOKEN
+          }
+
+        }
+
+      );
+
     const data =
-      JSON.parse(event.body || '{}');
+      await response.json();
+
+    if(
+      !data.records ||
+      data.records.length === 0
+    ){
+
+      return {
+
+        statusCode:200,
+
+        headers:{
+          'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+
+          success:false
+
+        })
+
+      };
+
+    }
+
+    const r =
+      data.records[0];
+
+    const member = {
+
+      phone:
+        r['手機號碼']?.value || '',
+
+      name:
+        r['參賽者姓名']?.value || '',
+
+      teams:
+        (r['代表球隊']?.value || '')
+        .split('、'),
+
+      valid:
+        r['是否有效']?.value || ''
+
+    };
 
     return {
 
@@ -16,8 +99,7 @@ exports.handler = async (event) => {
       body:JSON.stringify({
 
         success:true,
-        message:'比賽建立成功',
-        data
+        member
 
       })
 
@@ -36,7 +118,7 @@ exports.handler = async (event) => {
       body:JSON.stringify({
 
         success:false,
-        message:error.message
+        error:error.message
 
       })
 
