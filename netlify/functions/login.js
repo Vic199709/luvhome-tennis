@@ -7,42 +7,90 @@ exports.handler = async (event) => {
       .replace(/-/g,'')
       .trim();
 
-    const members = [
+    // ===== Kintone設定 =====
 
-      {
-        phone:'0932028517',
-        name:'陳志勇',
-        age:61,
-        teams:['國防','育友','錦和','綠寶石']
-      },
+    const DOMAIN =
+      'dekt.cybozu.com';
 
-      {
-        phone:'0905768683',
-        name:'王紹為',
-        age:47,
-        teams:['錦和']
-      },
+    const APP_ID =
+      '178';
 
-      {
-        phone:'0970516416',
-        name:'洪啟峰',
-        age:45,
-        teams:['育友']
-      },
+    const API_TOKEN =
+      '你的App178_API_TOKEN';
 
-      {
-        phone:'0987654321',
-        name:'Lina',
-        age:66,
-        teams:['大墩']
-      }
+    // =====================
 
-    ];
-
-    const member =
-      members.find(
-        m => m.phone === phone
+    const query =
+      encodeURIComponent(
+        `手機號碼 = "${phone}"`
       );
+
+    const response =
+      await fetch(
+
+        `https://${DOMAIN}/k/v1/records.json?app=${APP_ID}&query=${query}`,
+
+        {
+
+          method:'GET',
+
+          headers:{
+            'X-Cybozu-API-Token':API_TOKEN
+          }
+
+        }
+
+      );
+
+    const data =
+      await response.json();
+
+    if(
+      !data.records ||
+      data.records.length === 0
+    ){
+
+      return {
+
+        statusCode:200,
+
+        headers:{
+          'Content-Type':'application/json'
+        },
+
+        body:JSON.stringify({
+
+          success:false
+
+        })
+
+      };
+
+    }
+
+    const r =
+      data.records[0];
+
+    const member = {
+
+      phone:
+        r['手機號碼']?.value || '',
+
+      name:
+        r['參賽者姓名']?.value || '',
+
+      teams:
+        (r['代表球隊']?.value || '')
+        .replace(/,/g,'、')
+        .replace(/，/g,'、')
+        .split('、')
+        .map(t => t.trim())
+        .filter(Boolean),
+
+      valid:
+        r['是否有效']?.value || ''
+
+    };
 
     return {
 
@@ -54,9 +102,8 @@ exports.handler = async (event) => {
 
       body:JSON.stringify({
 
-        success:!!member,
-
-        member:member || null
+        success:true,
+        member
 
       })
 
