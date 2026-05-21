@@ -20,6 +20,9 @@ exports.handler = async function (event) {
       `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json` +
       `?app=${APP_ID}&query=${encodeURIComponent(query)}`;
 
+
+    console.log("Kintone token:", process.env.KINTONE_API_TOKEN_APP178);
+    
     const kintoneRes = await fetch(url, {
       method: "GET",
       headers: {
