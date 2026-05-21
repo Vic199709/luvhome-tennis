@@ -326,7 +326,8 @@ async function login() {
     name: data.name,
     phone: data.phone,
     teams: data.teams,
-    scores: data.scores || []
+    scores: data.scores || [],
+    app173Records: normalizeApp173Records(data.app173Records || [])
   };
 
   document.getElementById("loginView").classList.add("hidden");
@@ -360,20 +361,47 @@ function selectTeam(team) {
 }
 
 function getCurrentApp173Score() {
-  return (currentMember.scores || []).find(score => score.team === currentTeam);
+  return getApp173Records()
+    .find(record => record.team === currentTeam && record.isCurrentMember);
+}
+
+function normalizeApp173Records(records) {
+  return records
+    .map(record => ({
+      name: record.name,
+      team: record.team,
+      score: record.totalScore ?? 0,
+      matches: record.matches ?? 0,
+      isCurrentMember: Boolean(record.isCurrentMember)
+    }))
+    .filter(record => record.name && record.team);
+}
+
+function getApp173Records() {
+  return currentMember?.app173Records || [];
+}
+
+function getRankingRecords() {
+  const app173Records = getApp173Records();
+  return app173Records.length > 0 ? app173Records : rankings;
 }
 
 function renderMain() {
-  const memberRecords = rankings.filter(r => r.name === currentMember.name);
-  const teamRecords = rankings.filter(r => r.team === currentTeam);
-  const myRecord = rankings.find(r => r.name === currentMember.name && r.team === currentTeam);
+  const rankingRecords = getRankingRecords();
+  const memberRecords = rankingRecords.filter(r => r.name === currentMember.name || r.isCurrentMember);
+  const teamRecords = rankingRecords.filter(r => r.team === currentTeam);
+  const myRecord = rankingRecords.find(r => {
+    return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
+  });
   const app173Score = getCurrentApp173Score();
 
-  const leagueSorted = [...rankings].sort((a, b) => b.score - a.score);
-  const leagueRank = leagueSorted.findIndex(r => r.name === currentMember.name && r.team === currentTeam) + 1;
+  const leagueSorted = [...rankingRecords].sort((a, b) => b.score - a.score);
+  const leagueRank = leagueSorted.findIndex(r => {
+    return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
+  }) + 1;
 
   const teamSorted = [...teamRecords].sort((a, b) => b.score - a.score);
-  const teamRank = teamSorted.findIndex(r => r.name === currentMember.name) + 1;
+  const teamRank = teamSorted.findIndex(r => r.name === currentMember.name || r.isCurrentMember) + 1;
 
   const memberRank = memberRecords
     .sort((a, b) => b.score - a.score)
@@ -387,7 +415,7 @@ function renderMain() {
   document.getElementById("currentTeamName").innerText = currentTeam;
   document.getElementById("teamRank").innerText = `#${teamRank || "-"}`;
   document.getElementById("teamScore").innerText =
-    app173Score?.totalScore ?? (myRecord ? myRecord.score : "-");
+    app173Score?.score ?? (myRecord ? myRecord.score : "-");
   document.getElementById("teamMatches").innerText =
     app173Score?.matches ?? (myRecord ? myRecord.matches : "-");
   document.getElementById("memberRank").innerText = `#${memberRank || "-"}`;
@@ -403,7 +431,7 @@ function renderTeamRanking() {
   document.getElementById("rankingTitle").innerText = `🏅 ${currentTeam} 球隊 TOP8`;
   document.getElementById("toggleBtn").innerText = "全聯盟排名查詢";
 
-  const data = rankings
+  const data = getRankingRecords()
     .filter(r => r.team === currentTeam)
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
@@ -416,7 +444,7 @@ function renderLeagueRanking() {
   document.getElementById("rankingTitle").innerText = "🌐 全聯盟 TOP8";
   document.getElementById("toggleBtn").innerText = "返回球隊排名";
 
-  const data = [...rankings]
+  const data = [...getRankingRecords()]
     .sort((a, b) => b.score - a.score)
     .slice(0, 8);
 

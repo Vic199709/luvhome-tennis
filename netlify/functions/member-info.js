@@ -49,18 +49,21 @@ exports.handler = async function (event) {
       .map(t => t.trim())
       .filter(Boolean);
 
-    const scores = await fetchApp173Scores({
+    const app173Records = await fetchApp173Scores({
       phone,
       name: record["參賽者姓名"].value,
       teams
     });
+
+    const scores = app173Records.filter(score => score.isCurrentMember);
 
     return response({
       ok: true,
       phone: record["手機號碼"].value,
       name: record["參賽者姓名"].value,
       teams,
-      scores
+      scores,
+      app173Records
     });
 
   } catch (error) {
@@ -104,23 +107,26 @@ async function fetchApp173Scores(member) {
   }
 
   return data.records
-    .map(normalizeScoreRecord)
-    .filter(score => {
+    .map(record => {
+      const score = normalizeScoreRecord(record);
       const samePhone = score.phone && score.phone === member.phone;
       const sameName = score.name && score.name === member.name;
-      const sameTeam = member.teams.includes(score.team);
 
-      return sameTeam && (samePhone || sameName);
-    });
+      return {
+        ...score,
+        isCurrentMember: Boolean(samePhone || sameName)
+      };
+    })
+    .filter(score => score.name && score.team);
 }
 
 function normalizeScoreRecord(record) {
   return {
-    phone: digits(getValue(record, ["手機號碼", "電話", "手機", "phone"])),
-    name: String(getValue(record, ["參賽者姓名", "姓名", "會員姓名", "name"]) || "").trim(),
-    team: String(getValue(record, ["代表球隊", "球隊", "隊伍", "team"]) || "").trim(),
-    totalScore: numberValue(getValue(record, ["總積分", "積分", "總分", "score"])),
-    matches: numberValue(getValue(record, ["出賽場次", "場次", "matches"]))
+    phone: digits(getValue(record, ["手機號碼", "電話", "手機", "Phone", "phone"])),
+    name: String(getValue(record, ["參賽者姓名", "姓名", "會員姓名", "選手姓名", "Name", "name"]) || "").trim(),
+    team: String(getValue(record, ["代表球隊", "球隊", "隊伍", "Team", "team"]) || "").trim(),
+    totalScore: numberValue(getValue(record, ["總積分", "積分", "總分", "TotalScore", "score"])),
+    matches: numberValue(getValue(record, ["出賽場次", "總場次", "場次", "Matches", "matches"]))
   };
 }
 
