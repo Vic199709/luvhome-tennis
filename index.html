@@ -325,7 +325,8 @@ async function login() {
   currentMember = {
     name: data.name,
     phone: data.phone,
-    teams: data.teams
+    teams: data.teams,
+    scores: data.scores || []
   };
 
   document.getElementById("loginView").classList.add("hidden");
@@ -358,10 +359,15 @@ function selectTeam(team) {
   renderTeamRanking();
 }
 
+function getCurrentApp173Score() {
+  return (currentMember.scores || []).find(score => score.team === currentTeam);
+}
+
 function renderMain() {
   const memberRecords = rankings.filter(r => r.name === currentMember.name);
   const teamRecords = rankings.filter(r => r.team === currentTeam);
   const myRecord = rankings.find(r => r.name === currentMember.name && r.team === currentTeam);
+  const app173Score = getCurrentApp173Score();
 
   const leagueSorted = [...rankings].sort((a, b) => b.score - a.score);
   const leagueRank = leagueSorted.findIndex(r => r.name === currentMember.name && r.team === currentTeam) + 1;
@@ -380,8 +386,10 @@ function renderMain() {
 
   document.getElementById("currentTeamName").innerText = currentTeam;
   document.getElementById("teamRank").innerText = `#${teamRank || "-"}`;
-  document.getElementById("teamScore").innerText = myRecord ? myRecord.score : "-";
-  document.getElementById("teamMatches").innerText = myRecord ? myRecord.matches : "-";
+  document.getElementById("teamScore").innerText =
+    app173Score?.totalScore ?? (myRecord ? myRecord.score : "-");
+  document.getElementById("teamMatches").innerText =
+    app173Score?.matches ?? (myRecord ? myRecord.matches : "-");
   document.getElementById("memberRank").innerText = `#${memberRank || "-"}`;
 
   document.getElementById("leagueRank").innerText = `#${leagueRank || "-"}`;

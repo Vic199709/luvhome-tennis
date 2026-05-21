@@ -49,11 +49,18 @@ exports.handler = async function (event) {
       .map(t => t.trim())
       .filter(Boolean);
 
+    const scores = await fetchApp173Scores({
+      phone,
+      name: record["參賽者姓名"].value,
+      teams
+    });
+
     return response({
       ok: true,
       phone: record["手機號碼"].value,
       name: record["參賽者姓名"].value,
-      teams
+      teams,
+      scores
     });
 
   } catch (error) {
@@ -67,6 +74,74 @@ exports.handler = async function (event) {
     });
   }
 };
+
+async function fetchApp173Scores(member) {
+  const token =
+    process.env.KINTONE_API_TOKEN_APP173 ||
+    process.env.KINTONE_API_TOKEN ||
+    process.env.KINTONE_API_TOKEN_APP178;
+
+  if (!process.env.KINTONE_DOMAIN || !token) {
+    return [];
+  }
+
+  const url =
+    `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json` +
+    `?app=173&query=${encodeURIComponent("order by $id desc limit 500")}`;
+
+  const kintoneRes = await fetch(url, {
+    method: "GET",
+    headers: {
+      "X-Cybozu-API-Token": token
+    }
+  });
+
+  const data = await kintoneRes.json();
+
+  if (!kintoneRes.ok || !Array.isArray(data.records)) {
+    console.log("App173查詢失敗:", JSON.stringify(data));
+    return [];
+  }
+
+  return data.records
+    .map(normalizeScoreRecord)
+    .filter(score => {
+      const samePhone = score.phone && score.phone === member.phone;
+      const sameName = score.name && score.name === member.name;
+      const sameTeam = member.teams.includes(score.team);
+
+      return sameTeam && (samePhone || sameName);
+    });
+}
+
+function normalizeScoreRecord(record) {
+  return {
+    phone: digits(getValue(record, ["手機號碼", "電話", "手機", "phone"])),
+    name: String(getValue(record, ["參賽者姓名", "姓名", "會員姓名", "name"]) || "").trim(),
+    team: String(getValue(record, ["代表球隊", "球隊", "隊伍", "team"]) || "").trim(),
+    totalScore: numberValue(getValue(record, ["總積分", "積分", "總分", "score"])),
+    matches: numberValue(getValue(record, ["出賽場次", "場次", "matches"]))
+  };
+}
+
+function getValue(record, fieldCodes) {
+  for (const fieldCode of fieldCodes) {
+    if (record[fieldCode]?.value !== undefined) {
+      return record[fieldCode].value;
+    }
+  }
+
+  return "";
+}
+
+function digits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function numberValue(value) {
+  const number = Number(String(value ?? "").replace(/,/g, ""));
+  return Number.isFinite(number) ? number : null;
+}
 
 function response(body) {
   return {
