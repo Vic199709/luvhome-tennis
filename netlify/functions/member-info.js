@@ -11,15 +11,9 @@ exports.handler = async function (event) {
       });
     }
 
-    const APP_ID = 178;
+    const query = `手機號碼 = "${phone}" and 是否有效 in ("Y")`;
+    const url = `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json?app=178&query=${encodeURIComponent(query)}`;
 
-    const query =
-      `手機號碼 = "${phone}" and 是否有效 in ("Y")`;
-
-    const url =
-      `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json` +
-      `?app=${APP_ID}&query=${encodeURIComponent(query)}`;
-    
     const kintoneRes = await fetch(url, {
       method: "GET",
       headers: {
@@ -41,8 +35,7 @@ exports.handler = async function (event) {
 
     const record = data.records[0];
 
-    const teamsText =
-      record["代表球隊"]?.value || "";
+    const teamsText = record["代表球隊"]?.value || "";
 
     const teams = teamsText
       .split(/[、,，]/)
@@ -88,9 +81,7 @@ async function fetchApp173Scores(member) {
     return [];
   }
 
-  const url =
-    `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json` +
-    `?app=173&query=${encodeURIComponent("order by $id desc limit 500")}`;
+  const url = `https://${process.env.KINTONE_DOMAIN}/k/v1/records.json?app=173&query=${encodeURIComponent("order by $id desc limit 500")}`;
 
   const kintoneRes = await fetch(url, {
     method: "GET",

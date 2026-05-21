@@ -1,467 +1,448 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>網球聯盟會員入口</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>網球聯盟會員入口</title>
 
-<style>
-* {
-  box-sizing: border-box;
-}
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-body {
-  margin: 0;
-  padding: 16px;
-  font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
-  background: #f1f4f8;
-  color: #123;
-}
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      background: #f1f4f8;
+      color: #123;
+    }
 
-.card {
-  background: #fff;
-  border-radius: 18px;
-  padding: 22px;
-  margin: 0 auto 16px;
-  max-width: 860px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-}
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      margin: 0 auto 16px;
+      max-width: 860px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
 
-h1, h2, h3 {
-  margin: 0 0 16px;
-}
+    h1,
+    h2,
+    h3 {
+      margin: 0 0 16px;
+    }
 
-input {
-  width: 100%;
-  padding: 16px;
-  font-size: 18px;
-  border: 2px solid #111;
-  border-radius: 14px;
-  margin-bottom: 20px;
-  background: #eef5ff;
-}
+    input {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      border: 2px solid #111;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      background: #eef5ff;
+    }
 
-button {
-  width: 100%;
-  border: 0;
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 17px;
-  font-weight: 700;
-  cursor: pointer;
-}
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+    }
 
-.btn-blue {
-  background: #2878dd;
-  color: #fff;
-}
+    .btn-blue {
+      background: #2878dd;
+      color: #fff;
+    }
 
-.btn-red {
-  background: #f24d52;
-  color: #fff;
-}
+    .btn-red {
+      background: #f24d52;
+      color: #fff;
+    }
 
-.btn-dark {
-  background: #344f5d;
-  color: #fff;
-}
+    .btn-dark {
+      background: #344f5d;
+      color: #fff;
+    }
 
-.team-btn {
-  background: #fff;
-  border: 1px solid #ddd;
-  color: #123;
-  margin-bottom: 10px;
-}
+    .team-btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      color: #123;
+      margin-bottom: 10px;
+    }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
 
-.panel {
-  border-radius: 16px;
-  padding: 18px;
-}
+    .panel {
+      border-radius: 16px;
+      padding: 18px;
+    }
 
-.panel-green {
-  background: #effff5;
-  border: 1px solid #92ddb2;
-}
+    .panel-green {
+      background: #effff5;
+      border: 1px solid #92ddb2;
+    }
 
-.panel-orange {
-  background: #fff8ea;
-  border: 1px solid #f6c27a;
-}
+    .panel-orange {
+      background: #fff8ea;
+      border: 1px solid #f6c27a;
+    }
 
-.panel-title {
-  font-size: 20px;
-  font-weight: 800;
-  border-bottom: 2px solid currentColor;
-  padding-bottom: 10px;
-  margin-bottom: 18px;
-}
+    .panel-title {
+      font-size: 20px;
+      font-weight: 800;
+      border-bottom: 2px solid currentColor;
+      padding-bottom: 10px;
+      margin-bottom: 18px;
+    }
 
-.team-name {
-  text-align: center;
-  color: #078342;
-  font-size: 30px;
-  font-weight: 900;
-  margin-bottom: 16px;
-}
+    .team-name {
+      text-align: center;
+      color: #078342;
+      font-size: 30px;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
 
-.stat-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
 
-.stat-box {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px;
-  text-align: center;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.06);
-}
+    .stat-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
 
-.stat-label {
-  font-size: 14px;
-  margin-bottom: 8px;
-}
+    .stat-label {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
 
-.stat-value {
-  font-size: 30px;
-  font-weight: 900;
-  color: #087c3d;
-}
+    .stat-value {
+      font-size: 30px;
+      font-weight: 900;
+      color: #087c3d;
+    }
 
-.orange-value {
-  color: #e86800;
-}
+    .orange-value {
+      color: #e86800;
+    }
 
-.action-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-top: 20px;
-}
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  overflow: hidden;
-}
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      overflow: hidden;
+    }
 
-th, td {
-  border: 1px solid #ddd;
-  padding: 11px;
-  text-align: center;
-}
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 11px;
+      text-align: center;
+    }
 
-th {
-  background: #f3f3f3;
-}
+    th {
+      background: #f3f3f3;
+    }
 
-tr.first {
-  background: #fff5c9;
-}
+    tr.first {
+      background: #fff5c9;
+    }
 
-.score {
-  color: #e86800;
-  font-weight: 700;
-}
+    .score {
+      color: #e86800;
+      font-weight: 700;
+    }
 
-.hidden {
-  display: none;
-}
+    .hidden {
+      display: none;
+    }
 
-@media (max-width: 700px) {
-  body {
-    padding: 10px;
-  }
+    @media (max-width: 700px) {
+      body {
+        padding: 10px;
+      }
 
-  .card {
-    padding: 18px;
-  }
+      .card {
+        padding: 18px;
+      }
 
-  .info-grid,
-  .action-row {
-    grid-template-columns: 1fr;
-  }
+      .info-grid,
+      .action-row {
+        grid-template-columns: 1fr;
+      }
 
-  .stat-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-</style>
+      .stat-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<!-- 登入畫面 -->
-<div id="loginView" class="card">
-  <h1>🎾 網球聯盟會員登入</h1>
-  <input id="phoneInput" placeholder="請輸入手機號碼" />
-  <button class="btn-blue" onclick="login()">會員驗證登入</button>
-</div>
-
-<!-- 選擇球隊畫面 -->
-<div id="teamSelectView" class="card hidden">
-  <h1 id="welcomeText"></h1>
-  <p id="phoneText"></p>
-  <p>請選擇要查看的代表球隊：</p>
-  <div id="teamButtons"></div>
-  <button class="btn-red" onclick="logout()">登出</button>
-</div>
-
-<!-- 會員主畫面 -->
-<div id="mainView" class="card hidden">
-  <h1 id="memberTitle"></h1>
-  <p id="memberPhone"></p>
-  <p id="registeredTeams"></p>
-  <p id="currentTeam"></p>
-
-  <div class="info-grid">
-    <div class="panel panel-green">
-      <div class="panel-title">👥 代表球隊資訊</div>
-      <div id="currentTeamName" class="team-name"></div>
-
-      <div class="stat-grid">
-        <div class="stat-box">
-          <div class="stat-label">🏆 球隊內排名</div>
-          <div id="teamRank" class="stat-value"></div>
-        </div>
-
-        <div class="stat-box">
-          <div class="stat-label">⭐ 球隊積分</div>
-          <div id="teamScore" class="stat-value"></div>
-        </div>
-
-        <div class="stat-box">
-          <div class="stat-label">🎾 球隊出賽場次</div>
-          <div id="teamMatches" class="stat-value"></div>
-        </div>
-
-        <div class="stat-box">
-          <div class="stat-label">👥 球隊成員排名</div>
-          <div id="memberRank" class="stat-value"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel panel-orange">
-      <div class="panel-title">🌐 全聯盟資訊</div>
-
-      <div class="stat-box" style="margin-bottom:12px;">
-        <div class="stat-label">🌐 全聯盟總排名</div>
-        <div id="leagueRank" class="stat-value orange-value"></div>
-      </div>
-
-      <div class="stat-box">
-        <div class="stat-label">🔥 全聯盟總積分</div>
-        <div id="leagueScore" class="stat-value orange-value"></div>
-      </div>
-    </div>
+  <!-- 登入畫面 -->
+  <div id="loginView" class="card">
+    <h1>🎾 網球聯盟會員登入</h1>
+    <input id="phoneInput" placeholder="請輸入手機號碼" />
+    <button class="btn-blue" onclick="login()">會員驗證登入</button>
   </div>
 
-  <div class="action-row">
-    <button class="btn-dark" onclick="backToTeamSelect()">切換代表球隊</button>
-    <button id="toggleBtn" class="btn-blue" onclick="toggleRanking()">全聯盟排名查詢</button>
+  <!-- 選擇球隊畫面 -->
+  <div id="teamSelectView" class="card hidden">
+    <h1 id="welcomeText"></h1>
+    <p id="phoneText"></p>
+    <p>請選擇要查看的代表球隊：</p>
+    <div id="teamButtons"></div>
     <button class="btn-red" onclick="logout()">登出</button>
   </div>
-</div>
 
-<!-- 排名表 -->
-<div id="rankingView" class="card hidden">
-  <h1 id="rankingTitle"></h1>
-  <table>
-    <thead>
-      <tr>
-        <th>排名</th>
-        <th>姓名</th>
-        <th>球隊</th>
-        <th>積分</th>
-        <th>場次</th>
-      </tr>
-    </thead>
-    <tbody id="rankingBody"></tbody>
-  </table>
-</div>
+  <!-- 會員主畫面 -->
+  <div id="mainView" class="card hidden">
+    <h1 id="memberTitle"></h1>
+    <p id="memberPhone"></p>
+    <p id="registeredTeams"></p>
+    <p id="currentTeam"></p>
 
-<script>
+    <div class="info-grid">
+      <div class="panel panel-green">
+        <div class="panel-title">👥 代表球隊資訊</div>
+        <div id="currentTeamName" class="team-name"></div>
 
-const rankings = [
-  { name: "洪啟峰", team: "育友", score: 46, matches: 6 },
-  { name: "陳志勇", team: "綠寶石", score: 36, matches: 5 },
-  { name: "陳志勇", team: "錦和", score: 33, matches: 5 },
-  { name: "Lina", team: "大觀", score: 28, matches: 8 },
-  { name: "王紹為", team: "錦和", score: 26, matches: 4 },
-  { name: "王紹為", team: "育友", score: 26, matches: 4 },
-  { name: "Lina", team: "綠寶石", score: 23, matches: 3 },
-  { name: "陳建豪", team: "華中", score: 20, matches: 2 }
-];
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-label">🏆 球隊內排名</div>
+            <div id="teamRank" class="stat-value"></div>
+          </div>
 
-let currentMember = null;
-let currentTeam = null;
-let showingLeague = false;
+          <div class="stat-box">
+            <div class="stat-label">⭐ 球隊積分</div>
+            <div id="teamScore" class="stat-value"></div>
+          </div>
 
-async function login() {
-  const phone = document.getElementById("phoneInput").value.replace(/\D/g, "");
+          <div class="stat-box">
+            <div class="stat-label">🎾 球隊出賽場次</div>
+            <div id="teamMatches" class="stat-value"></div>
+          </div>
 
-  if (!phone) {
-    alert("請輸入手機號碼");
-    return;
-  }
+          <div class="stat-box">
+            <div class="stat-label">👥 球隊成員排名</div>
+            <div id="memberRank" class="stat-value"></div>
+          </div>
+        </div>
+      </div>
 
-  const res = await fetch(`/.netlify/functions/member-info?phone=${encodeURIComponent(phone)}`);
-  const data = await res.json();
+      <div class="panel panel-orange">
+        <div class="panel-title">🌐 全聯盟資訊</div>
 
-  if (!data.ok) {
-    alert(data.message || "查無會員資料，請確認手機號碼");
-    return;
-  }
+        <div class="stat-box" style="margin-bottom:12px;">
+          <div class="stat-label">🌐 全聯盟總排名</div>
+          <div id="leagueRank" class="stat-value orange-value"></div>
+        </div>
 
-  currentMember = {
-    name: data.name,
-    phone: data.phone,
-    teams: data.teams,
-    scores: data.scores || [],
-    app173Records: normalizeApp173Records(data.app173Records || [])
-  };
+        <div class="stat-box">
+          <div class="stat-label">🔥 全聯盟總積分</div>
+          <div id="leagueScore" class="stat-value orange-value"></div>
+        </div>
+      </div>
+    </div>
 
-  document.getElementById("loginView").classList.add("hidden");
-  document.getElementById("teamSelectView").classList.remove("hidden");
+    <div class="action-row">
+      <button class="btn-dark" onclick="backToTeamSelect()">切換代表球隊</button>
+      <button id="toggleBtn" class="btn-blue" onclick="toggleRanking()">全聯盟排名查詢</button>
+      <button class="btn-red" onclick="logout()">登出</button>
+    </div>
+  </div>
 
-  document.getElementById("welcomeText").innerText = `${currentMember.name} 您好 👋`;
-  document.getElementById("phoneText").innerText = `📱 ${currentMember.phone}`;
+  <!-- 排名表 -->
+  <div id="rankingView" class="card hidden">
+    <h1 id="rankingTitle"></h1>
+    <table>
+      <thead>
+        <tr>
+          <th>排名</th>
+          <th>姓名</th>
+          <th>球隊</th>
+          <th>積分</th>
+          <th>場次</th>
+        </tr>
+      </thead>
+      <tbody id="rankingBody"></tbody>
+    </table>
+  </div>
 
-  const teamButtons = document.getElementById("teamButtons");
-  teamButtons.innerHTML = "";
+  <script>
+    let currentMember = null;
+    let currentTeam = null;
+    let showingLeague = false;
 
-  currentMember.teams.forEach(team => {
-    const btn = document.createElement("button");
-    btn.className = "team-btn";
-    btn.innerText = team;
-    btn.onclick = () => selectTeam(team);
-    teamButtons.appendChild(btn);
-  });
-}
+    async function login() {
+      const phone = document.getElementById("phoneInput").value.replace(/\D/g, "");
 
-function selectTeam(team) {
-  currentTeam = team;
-  showingLeague = false;
+      if (!phone) {
+        alert("請輸入手機號碼");
+        return;
+      }
 
-  document.getElementById("teamSelectView").classList.add("hidden");
-  document.getElementById("mainView").classList.remove("hidden");
-  document.getElementById("rankingView").classList.remove("hidden");
+      const res = await fetch(`/.netlify/functions/member-info?phone=${encodeURIComponent(phone)}`);
+      const data = await res.json();
 
-  renderMain();
-  renderTeamRanking();
-}
+      if (!data.ok) {
+        alert(data.message || "查無會員資料，請確認手機號碼");
+        return;
+      }
 
-function getCurrentApp173Score() {
-  return getApp173Records()
-    .find(record => record.team === currentTeam && record.isCurrentMember);
-}
+      currentMember = {
+        name: data.name,
+        phone: data.phone,
+        teams: data.teams,
+        scores: data.scores || [],
+        app173Records: normalizeApp173Records(data.app173Records || [])
+      };
 
-function normalizeApp173Records(records) {
-  return records
-    .map(record => ({
-      name: record.name,
-      team: record.team,
-      score: record.totalScore ?? 0,
-      matches: record.matches ?? 0,
-      isCurrentMember: Boolean(record.isCurrentMember)
-    }))
-    .filter(record => record.name && record.team);
-}
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("teamSelectView").classList.remove("hidden");
 
-function getApp173Records() {
-  return currentMember?.app173Records || [];
-}
+      document.getElementById("welcomeText").innerText = `${currentMember.name} 您好 👋`;
+      document.getElementById("phoneText").innerText = `📱 ${currentMember.phone}`;
 
-function getRankingRecords() {
-  const app173Records = getApp173Records();
-  return app173Records.length > 0 ? app173Records : rankings;
-}
+      const teamButtons = document.getElementById("teamButtons");
+      teamButtons.innerHTML = "";
 
-function renderMain() {
-  const rankingRecords = getRankingRecords();
-  const memberRecords = rankingRecords.filter(r => r.name === currentMember.name || r.isCurrentMember);
-  const teamRecords = rankingRecords.filter(r => r.team === currentTeam);
-  const myRecord = rankingRecords.find(r => {
-    return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
-  });
-  const app173Score = getCurrentApp173Score();
+      currentMember.teams.forEach(team => {
+        const btn = document.createElement("button");
+        btn.className = "team-btn";
+        btn.innerText = team;
+        btn.onclick = () => selectTeam(team);
+        teamButtons.appendChild(btn);
+      });
+    }
 
-  const leagueSorted = [...rankingRecords].sort((a, b) => b.score - a.score);
-  const leagueRank = leagueSorted.findIndex(r => {
-    return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
-  }) + 1;
+    function selectTeam(team) {
+      currentTeam = team;
+      showingLeague = false;
 
-  const teamSorted = [...teamRecords].sort((a, b) => b.score - a.score);
-  const teamRank = teamSorted.findIndex(r => r.name === currentMember.name || r.isCurrentMember) + 1;
+      document.getElementById("teamSelectView").classList.add("hidden");
+      document.getElementById("mainView").classList.remove("hidden");
+      document.getElementById("rankingView").classList.remove("hidden");
 
-  const memberRank = memberRecords
-    .sort((a, b) => b.score - a.score)
-    .findIndex(r => r.team === currentTeam) + 1;
+      renderMain();
+      renderTeamRanking();
+    }
 
-  document.getElementById("memberTitle").innerText = `${currentMember.name} 您好 👋`;
-  document.getElementById("memberPhone").innerText = `📱 ${currentMember.phone}`;
-  document.getElementById("registeredTeams").innerText = `🎾 登錄球隊：${currentMember.teams.join("、")}`;
-  document.getElementById("currentTeam").innerText = `🔎 目前代表球隊：${currentTeam}`;
+    function normalizeApp173Records(records) {
+      return records
+        .map(record => ({
+          name: record.name,
+          team: record.team,
+          score: record.totalScore ?? 0,
+          matches: record.matches ?? 0,
+          isCurrentMember: Boolean(record.isCurrentMember)
+        }))
+        .filter(record => record.name && record.team);
+    }
 
-  document.getElementById("currentTeamName").innerText = currentTeam;
-  document.getElementById("teamRank").innerText = `#${teamRank || "-"}`;
-  document.getElementById("teamScore").innerText =
-    app173Score?.score ?? (myRecord ? myRecord.score : "-");
-  document.getElementById("teamMatches").innerText =
-    app173Score?.matches ?? (myRecord ? myRecord.matches : "-");
-  document.getElementById("memberRank").innerText = `#${memberRank || "-"}`;
+    function getApp173Records() {
+      return currentMember?.app173Records || [];
+    }
 
-  document.getElementById("leagueRank").innerText = `#${leagueRank || "-"}`;
-  document.getElementById("leagueScore").innerText = memberRecords.reduce((sum, r) => sum + r.score, 0);
+    function renderMain() {
+      const rankingRecords = getApp173Records();
+      const memberRecords = rankingRecords.filter(r => r.name === currentMember.name || r.isCurrentMember);
+      const teamRecords = rankingRecords.filter(r => r.team === currentTeam);
+      const myRecord = rankingRecords.find(r => {
+        return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
+      });
 
-  document.getElementById("toggleBtn").innerText = "全聯盟排名查詢";
-}
+      const leagueSorted = [...rankingRecords].sort((a, b) => b.score - a.score);
+      const leagueRank = leagueSorted.findIndex(r => {
+        return r.team === currentTeam && (r.name === currentMember.name || r.isCurrentMember);
+      }) + 1;
 
-function renderTeamRanking() {
-  showingLeague = false;
-  document.getElementById("rankingTitle").innerText = `🏅 ${currentTeam} 球隊 TOP8`;
-  document.getElementById("toggleBtn").innerText = "全聯盟排名查詢";
+      const teamSorted = [...teamRecords].sort((a, b) => b.score - a.score);
+      const teamRank = teamSorted.findIndex(r => r.name === currentMember.name || r.isCurrentMember) + 1;
 
-  const data = getRankingRecords()
-    .filter(r => r.team === currentTeam)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8);
+      const memberRank = memberRecords
+        .sort((a, b) => b.score - a.score)
+        .findIndex(r => r.team === currentTeam) + 1;
 
-  renderTable(data);
-}
+      document.getElementById("memberTitle").innerText = `${currentMember.name} 您好 👋`;
+      document.getElementById("memberPhone").innerText = `📱 ${currentMember.phone}`;
+      document.getElementById("registeredTeams").innerText = `🎾 登錄球隊：${currentMember.teams.join("、")}`;
+      document.getElementById("currentTeam").innerText = `🔎 目前代表球隊：${currentTeam}`;
 
-function renderLeagueRanking() {
-  showingLeague = true;
-  document.getElementById("rankingTitle").innerText = "🌐 全聯盟 TOP8";
-  document.getElementById("toggleBtn").innerText = "返回球隊排名";
+      const app173Score = rankingRecords.find(record => record.team === currentTeam && record.isCurrentMember);
 
-  const data = [...getRankingRecords()]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8);
+      document.getElementById("currentTeamName").innerText = currentTeam;
+      document.getElementById("teamRank").innerText = `#${teamRank || "-"}`;
+      document.getElementById("teamScore").innerText = app173Score?.score ?? (myRecord ? myRecord.score : "-");
+      document.getElementById("teamMatches").innerText = app173Score?.matches ?? (myRecord ? myRecord.matches : "-");
+      document.getElementById("memberRank").innerText = `#${memberRank || "-"}`;
 
-  renderTable(data);
-}
+      document.getElementById("leagueRank").innerText = `#${leagueRank || "-"}`;
+      document.getElementById("leagueScore").innerText = memberRecords.reduce((sum, r) => sum + r.score, 0);
 
-function renderTable(data) {
-  const tbody = document.getElementById("rankingBody");
-  tbody.innerHTML = "";
+      document.getElementById("toggleBtn").innerText = "全聯盟排名查詢";
+    }
 
-  data.forEach((item, index) => {
-    const tr = document.createElement("tr");
-    if (index === 0) tr.className = "first";
+    function renderTeamRanking() {
+      showingLeague = false;
+      document.getElementById("rankingTitle").innerText = `🏅 ${currentTeam} 球隊 TOP8`;
+      document.getElementById("toggleBtn").innerText = "全聯盟排名查詢";
 
-    const rankIcon = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1;
+      const data = getApp173Records()
+        .filter(r => r.team === currentTeam)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8);
 
-    tr.innerHTML = `
+      renderTable(data);
+    }
+
+    function renderLeagueRanking() {
+      showingLeague = true;
+      document.getElementById("rankingTitle").innerText = "🌐 全聯盟 TOP8";
+      document.getElementById("toggleBtn").innerText = "返回球隊排名";
+
+      const data = [...getApp173Records()]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 8);
+
+      renderTable(data);
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById("rankingBody");
+      tbody.innerHTML = "";
+
+      data.forEach((item, index) => {
+        const tr = document.createElement("tr");
+        if (index === 0) tr.className = "first";
+
+        const rankIcon = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1;
+
+        tr.innerHTML = `
       <td>${rankIcon}</td>
       <td>${item.name}</td>
       <td>${item.team}</td>
@@ -469,36 +450,37 @@ function renderTable(data) {
       <td>${item.matches}</td>
     `;
 
-    tbody.appendChild(tr);
-  });
-}
+        tbody.appendChild(tr);
+      });
+    }
 
-function toggleRanking() {
-  if (showingLeague) {
-    renderTeamRanking();
-  } else {
-    renderLeagueRanking();
-  }
-}
+    function toggleRanking() {
+      if (showingLeague) {
+        renderTeamRanking();
+      } else {
+        renderLeagueRanking();
+      }
+    }
 
-function backToTeamSelect() {
-  document.getElementById("mainView").classList.add("hidden");
-  document.getElementById("rankingView").classList.add("hidden");
-  document.getElementById("teamSelectView").classList.remove("hidden");
-}
+    function backToTeamSelect() {
+      document.getElementById("mainView").classList.add("hidden");
+      document.getElementById("rankingView").classList.add("hidden");
+      document.getElementById("teamSelectView").classList.remove("hidden");
+    }
 
-function logout() {
-  currentMember = null;
-  currentTeam = null;
-  showingLeague = false;
+    function logout() {
+      currentMember = null;
+      currentTeam = null;
+      showingLeague = false;
 
-  document.getElementById("phoneInput").value = "";
-  document.getElementById("loginView").classList.remove("hidden");
-  document.getElementById("teamSelectView").classList.add("hidden");
-  document.getElementById("mainView").classList.add("hidden");
-  document.getElementById("rankingView").classList.add("hidden");
-}
-</script>
+      document.getElementById("phoneInput").value = "";
+      document.getElementById("loginView").classList.remove("hidden");
+      document.getElementById("teamSelectView").classList.add("hidden");
+      document.getElementById("mainView").classList.add("hidden");
+      document.getElementById("rankingView").classList.add("hidden");
+    }
+  </script>
 
 </body>
+
 </html>
