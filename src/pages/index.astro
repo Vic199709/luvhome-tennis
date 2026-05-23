@@ -1,0 +1,46 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Login from '../components/Login.astro';
+import Profile from '../components/Profile.astro';
+import MatchInput from '../components/MatchInput.astro';
+import Rankings from '../components/Rankings.astro';
+import AddMember from '../components/AddMember.astro';
+import AdminPanel from '../components/AdminPanel.astro';
+import Navbar from '../components/Navbar.astro';
+---
+
+<Layout>
+	<!-- Toast Notification Container -->
+	<div id="toast-container" class="toast-container"></div>
+
+	<!-- Top Bar / Header -->
+	<Header />
+
+	<!-- Member Verification Login Entrance -->
+	<Login />
+
+	<!-- Profile Page (Home) -->
+	<Profile />
+
+	<!-- Match Score Entry Page -->
+	<MatchInput />
+
+	<!-- Rankings and Charts Page -->
+	<Rankings />
+
+	<!-- Register/Add Member Page -->
+	<AddMember />
+
+	<!-- Admin Verification Panel -->
+	<AdminPanel />
+
+	<!-- Fixed Bottom Navigation Bar -->
+	<Navbar />
+</Layout>
+
+<!-- Load Chart.js from CDN -->
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Load App Client Logic -->
+<script src="../scripts/app.js"></script>
