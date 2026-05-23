@@ -73,9 +73,9 @@ Kintone REST API 設定及 record 範例:
 		{"record": {"teamName": {"type": "SINGLE_LINE_TEXT","value": "妝點家"},"teamScore": {"type": "NUMBER","value": "0"},"teamID": {"type": "RECORD_NUMBER","value": "1"}}}
 
 	- 比賽紀錄表, appid=194, token=FlU0pWNI93li3GSWBXblHJsLp90OaQUtfNR2ozPt
-		{"record": {"matchDateTime": {"type": "DATETIME","value": "2026-05-22T09:33:00Z"},"teamA": {"type": "SUBTABLE","value": [{"id": "8870","value": {"playerID_A": {"type": "NUMBER","value": "1"},"teamID_A": {"type": "NUMBER","value": "3"}}}]},"teamB": {"type": "SUBTABLE","value": [{"id": "8871","value": {"playerID_B": {"type": "NUMBER","value": "2"},"teamID_B": {"type": "NUMBER","value": "4"}}}]},"teamA_score": {"type": "NUMBER","value": "2"},"teamB_score": {"type": "NUMBER","value": "6"}, "isVerified": {"type": "RADIO_BUTTON","value": "true"}, "matchID": {"type": "RECORD_NUMBER","value": "1"}}}
+		{"record": {"matchDateTime": {"type": "DATETIME","value": "2026-05-22T09:33:00Z"},"teamA": {"type": "SUBTABLE","value": [{"id": "8870","value": {"playerID_A": {"type": "NUMBER","value": "1"},"teamID_A": {"type": "NUMBER","value": "3"}}}]},"teamB": {"type": "SUBTABLE","value": [{"id": "8871","value": {"playerID_B": {"type": "NUMBER","value": "2"},"teamID_B": {"type": "NUMBER","value": "4"}}}]},"teamA_score": {"type": "NUMBER","value": "2"},"teamB_score": {"type": "NUMBER","value": "6"}, "isVerified": {"type": "RADIO_BUTTON","value": "true"}, "winnerPoints": {"type": "NUMBER", "value": "10"}, "loserPoints": {"type": "NUMBER", "value": "3"}, "matchID": {"type": "RECORD_NUMBER","value": "1"}}}
 
 	- 積分與出賽歷程, appid=195, token=aAv4kk2N2BJ2tsF8S9thzTAMGkfl90fHCwtg3Un7
-		{"record": {"scoreChange": {"type": "NUMBER","value": "15"},"historyID": {"type": "RECORD_NUMBER","value": "1"},"teamID": {"type": "NUMBER","value": "2"},"$revision": {"type": "__REVISION__","value": "1"},"matchID": {"type": "NUMBER","value": "1"},"playerID": {"type": "NUMBER","value": "1"}}}
+		{"record": {"pointChange": {"type": "NUMBER","value": "15"},"historyID": {"type": "RECORD_NUMBER","value": "1"},"teamID": {"type": "NUMBER","value": "2"},"$revision": {"type": "__REVISION__","value": "1"},"matchID": {"type": "NUMBER","value": "1"},"playerID": {"type": "NUMBER","value": "1"}}}
 
 

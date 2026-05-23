@@ -45,7 +45,7 @@ export const store = reactive({
   matches: [],
   history: [],
   activeTeamId: null,
-  matchMode: 'singles',
+  matchMode: 'doubles',
   adminActiveTab: 'members',
   toasts: [],
   fullPageError: null,
@@ -92,7 +92,11 @@ export async function refreshAllData() {
     ]);
     
     store.members = members || [];
-    store.teams = teams || [];
+    store.teams = (teams || []).sort((a, b) => {
+      const idA = a.teamID?.value || '';
+      const idB = b.teamID?.value || '';
+      return idA.localeCompare(idB);
+    });
     store.matches = matches || [];
     store.history = history || [];
     

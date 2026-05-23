@@ -72,10 +72,6 @@ const approveMatch = async (matchID) => {
     verifyingMatchId.value = null;
   }
 };
-
-const goBackToProfile = () => {
-  store.currentView = 'view-profile';
-};
 </script>
 
 <template>
@@ -85,14 +81,6 @@ const goBackToProfile = () => {
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         管理員審核主控台
       </h2>
-      <button 
-        type="button" 
-        @click="goBackToProfile" 
-        class="btn btn-secondary btn-sm" 
-        style="width: auto; height: 32px; padding: 0 12px;"
-      >
-        返回個人頁
-      </button>
     </div>
 
     <div class="card" style="padding: 16px;">

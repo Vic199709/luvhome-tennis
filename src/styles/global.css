@@ -1090,3 +1090,123 @@ body {
   margin-top: 12px;
 }
 
+/* ===================================================
+   🎾 PROFILE ACTION BUTTONS (RICH CARDS)
+   =================================================== */
+.profile-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 20px 0;
+}
+
+@media (max-width: 600px) {
+  .profile-actions-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.action-card {
+  border-radius: 20px;
+  padding: 20px;
+  height: 160px;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.action-card-match {
+  background-color: #105B34; /* Dark rich green */
+}
+
+.action-card-ranking {
+  background-color: #F4731E; /* Rich orange */
+}
+
+.action-card-member {
+  background-color: #0A6F82; /* Rich teal */
+}
+
+.action-card-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.action-card-desc {
+  font-size: 12px;
+  opacity: 0.88;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.action-card-icon {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 64px;
+  height: 64px;
+  opacity: 0.9;
+}
+
+.action-card-icon-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.icon-racket {
+  width: 64px;
+  height: 64px;
+  color: #ffffff;
+}
+
+.icon-trophy {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 58px;
+  height: 58px;
+  opacity: 0.85;
+}
+
+.icon-user-add {
+  width: 38px;
+  height: 38px;
+  opacity: 0.85;
+}
+
+.circular-arrow-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: #0A6F82;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  margin-left: auto;
+}
+
+.circular-arrow-btn svg {
+  width: 16px;
+  height: 16px;
+}
+

@@ -58,7 +58,9 @@ export async function handler(event, context) {
             teamB: { value: kintoneTeamB },
             teamA_score: { value: String(teamA_score) },
             teamB_score: { value: String(teamB_score) },
-            isVerified: { value: 'false' }
+            isVerified: { value: 'false' },
+            winnerPoints: { value: String(winScore) },
+            loserPoints: { value: String(loseScore) }
           }
         })
       });
@@ -74,7 +76,7 @@ export async function handler(event, context) {
           playerID: { value: String(p.playerID) },
           teamID: { value: String(p.teamID) },
           matchID: { value: String(newMatchID) },
-          scoreChange: { value: String(isTeamAWon ? winScore : loseScore) }
+          pointChange: { value: String(isTeamAWon ? winScore : loseScore) }
         });
       });
 
@@ -84,7 +86,7 @@ export async function handler(event, context) {
           playerID: { value: String(p.playerID) },
           teamID: { value: String(p.teamID) },
           matchID: { value: String(newMatchID) },
-          scoreChange: { value: String(isTeamAWon ? loseScore : winScore) }
+          pointChange: { value: String(isTeamAWon ? loseScore : winScore) }
         });
       });
 
@@ -144,7 +146,7 @@ export async function handler(event, context) {
       for (const history of scoreHistories) {
         const playerID = history.playerID.value;
         const teamID = history.teamID.value;
-        const change = parseInt(history.scoreChange.value, 10) || 0;
+        const change = parseInt(history.pointChange.value, 10) || 0;
 
         // Fetch current member record
         const memberQuery = await kintoneFetch('members', `/k/v1/records.json?app=191&query=$id = "${playerID}"`);

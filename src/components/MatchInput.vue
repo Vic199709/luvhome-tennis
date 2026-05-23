@@ -18,7 +18,7 @@ const setDefaultDateTime = () => {
 setDefaultDateTime();
 
 // Player selections
-const playerA1 = ref('');
+const playerA1 = ref(store.currentUser ? store.currentUser.$id.value : '');
 const teamA1 = ref('');
 const playerA2 = ref('');
 const teamA2 = ref('');
@@ -64,7 +64,7 @@ const updateTeamsForPlayer = (playerId, targetTeamsRef, targetSelectedValRef) =>
     targetTeamsRef.value = member.teams.value.map(t => ({
       id: t.value.teamID.value,
       name: t.value.teamName.value
-    }));
+    })).sort((a, b) => a.id.localeCompare(b.id));
     if (targetTeamsRef.value.length > 0) {
       targetSelectedValRef.value = targetTeamsRef.value[0].id;
     } else {
@@ -76,10 +76,10 @@ const updateTeamsForPlayer = (playerId, targetTeamsRef, targetSelectedValRef) =>
   }
 };
 
-watch(playerA1, (val) => updateTeamsForPlayer(val, playerA1Teams, teamA1));
-watch(playerA2, (val) => updateTeamsForPlayer(val, playerA2Teams, teamA2));
-watch(playerB1, (val) => updateTeamsForPlayer(val, playerB1Teams, teamB1));
-watch(playerB2, (val) => updateTeamsForPlayer(val, playerB2Teams, teamB2));
+watch(playerA1, (val) => updateTeamsForPlayer(val, playerA1Teams, teamA1), { immediate: true });
+watch(playerA2, (val) => updateTeamsForPlayer(val, playerA2Teams, teamA2), { immediate: true });
+watch(playerB1, (val) => updateTeamsForPlayer(val, playerB1Teams, teamB1), { immediate: true });
+watch(playerB2, (val) => updateTeamsForPlayer(val, playerB2Teams, teamB2), { immediate: true });
 
 const handleMatchSubmit = async () => {
   fieldErrors.value = {};
@@ -162,7 +162,7 @@ const handleMatchSubmit = async () => {
   const sB = parseInt(scoreB.value, 10);
   if (!isNaN(sA) && !isNaN(sB)) {
     if (!isValidTennisScore(sA, sB)) {
-      errors.push('比數不符合網球規則！(需為 6-0~6-4, 7-5, 或 7-6 搶七，且不能平手。)');
+      errors.push('比數不符合網球規則！(需為 6:0 ~ 6:4, 7:5 或 7:6 搶七，且不能平手。)');
       fieldErrors.value.scoreA = '比數不合規。';
       fieldErrors.value.scoreB = '比數不合規。';
     }
@@ -263,17 +263,17 @@ const handleMatchSubmit = async () => {
           <div class="form-toggle">
             <button 
               type="button" 
-              @click="mode = 'singles'"
-              :class="['form-toggle-btn', { active: mode === 'singles' }]"
-            >
-              單打
-            </button>
-            <button 
-              type="button" 
               @click="mode = 'doubles'"
               :class="['form-toggle-btn', { active: mode === 'doubles' }]"
             >
               雙打
+            </button>
+            <button 
+              type="button" 
+              @click="mode = 'singles'"
+              :class="['form-toggle-btn', { active: mode === 'singles' }]"
+            >
+              單打
             </button>
           </div>
         </div>
@@ -333,7 +333,7 @@ const handleMatchSubmit = async () => {
             </div>
             
             <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">代表球隊</label>
+              <label class="form-label" style="font-size: 12px;">球隊 A1</label>
               <select 
                 v-model="teamA1" 
                 :class="['input-control select-team', { 'input-error': fieldErrors.teamA1 }]"
@@ -378,7 +378,7 @@ const handleMatchSubmit = async () => {
               </div>
             </div>
             <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">代表球隊</label>
+              <label class="form-label" style="font-size: 12px;">球隊 A2</label>
               <select 
                 v-model="teamA2" 
                 :class="['input-control select-team', { 'input-error': fieldErrors.teamA2 }]"
@@ -428,7 +428,7 @@ const handleMatchSubmit = async () => {
               </div>
             </div>
             <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">代表球隊</label>
+              <label class="form-label" style="font-size: 12px;">球隊 B1</label>
               <select 
                 v-model="teamB1" 
                 :class="['input-control select-team', { 'input-error': fieldErrors.teamB1 }]"
@@ -473,7 +473,7 @@ const handleMatchSubmit = async () => {
               </div>
             </div>
             <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">代表球隊</label>
+              <label class="form-label" style="font-size: 12px;">球隊 B2</label>
               <select 
                 v-model="teamB2" 
                 :class="['input-control select-team', { 'input-error': fieldErrors.teamB2 }]"
@@ -500,21 +500,14 @@ const handleMatchSubmit = async () => {
           <label class="form-label">比賽比數</label>
           <div class="player-select-row">
             <div class="form-group" style="margin-bottom: 0;">
-              <label for="score-a" class="form-label" style="font-size: 12px; color: var(--color-primary);">A 隊局數</label>
+              <label for="score-a" class="form-label" style="font-size: 12px; color: var(--color-primary);">A 隊比數</label>
               <select 
                 v-model="scoreA" 
                 id="score-a" 
                 :class="['input-control', { 'input-error': fieldErrors.scoreA }]"
                 required
               >
-                <option value="6">6</option>
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="7">7</option>
+                <option v-for="n in 8" :key="n - 1" :value="String(n - 1)">{{ n - 1 }}</option>
               </select>
               <div class="input-error-message" v-if="fieldErrors.scoreA">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -522,21 +515,14 @@ const handleMatchSubmit = async () => {
               </div>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-              <label for="score-b" class="form-label" style="font-size: 12px; color: var(--color-accent-dark);">B 隊局數</label>
+              <label for="score-b" class="form-label" style="font-size: 12px; color: var(--color-accent-dark);">B 隊比數</label>
               <select 
                 v-model="scoreB" 
                 id="score-b" 
                 :class="['input-control', { 'input-error': fieldErrors.scoreB }]"
                 required
               >
-                <option value="4">4</option>
-                <option value="0">0</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
+                <option v-for="n in 8" :key="n - 1" :value="String(n - 1)">{{ n - 1 }}</option>
               </select>
               <div class="input-error-message" v-if="fieldErrors.scoreB">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

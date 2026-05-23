@@ -6,7 +6,12 @@ const user = computed(() => store.currentUser);
 
 const userTeams = computed(() => {
   if (!user.value) return [];
-  return user.value.teams?.value || [];
+  const teams = user.value.teams?.value || [];
+  return [...teams].sort((a, b) => {
+    const idA = a.value.teamID?.value || '';
+    const idB = b.value.teamID?.value || '';
+    return idA.localeCompare(idB);
+  });
 });
 
 // Watch and automatically set activeTeamId if not set
@@ -105,30 +110,18 @@ const latestMatchPointsChange = computed(() => {
   if (!latestMatch.value || !user.value) return { winPoints: '--', losePoints: '--', isWinBold: false, isLoseBold: false };
   
   const currentUserId = user.value.$id.value;
-  const userHistories = store.history.filter(
-    h => h.matchID.value === latestMatch.value.$id.value && h.playerID.value === currentUserId
-  );
+  const match = latestMatch.value;
   
-  if (userHistories.length > 0) {
-    const changeVal = userHistories[0].scoreChange.value;
-    const isA = latestMatch.value.teamA.value.map(row => row.value.playerID_A.value).includes(currentUserId);
-    const scoreA = parseInt(latestMatch.value.teamA_score.value, 10);
-    const scoreB = parseInt(latestMatch.value.teamB_score.value, 10);
-    const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
-    
-    if (won) {
-      return { winPoints: `+${changeVal}`, losePoints: '--', isWinBold: true, isLoseBold: false };
-    } else {
-      return { winPoints: '--', losePoints: `+${changeVal}`, isWinBold: false, isLoseBold: true };
-    }
-  }
+  const isA = match.teamA.value.map(row => row.value.playerID_A.value).includes(currentUserId);
+  const scoreA = parseInt(match.teamA_score.value, 10);
+  const scoreB = parseInt(match.teamB_score.value, 10);
+  const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
   
-  return { winPoints: '--', losePoints: '--', isWinBold: false, isLoseBold: false };
+  const winVal = match.winnerPoints?.value || '10';
+  const loseVal = match.loserPoints?.value || '3';
+  
+  return { winPoints: winVal, losePoints: loseVal, isWinBold: won, isLoseBold: !won };
 });
-
-const enterAdmin = () => {
-  store.currentView = 'view-admin';
-};
 </script>
 
 <template>
@@ -164,11 +157,11 @@ const enterAdmin = () => {
       
       <div class="profile-stats-grid">
         <div class="profile-stat-box">
-          <span class="profile-stat-label">個人排名</span>
+          <span class="profile-stat-label">球隊個人排名</span>
           <span class="profile-stat-value">{{ personalRank }}</span>
         </div>
         <div class="profile-stat-box">
-          <span class="profile-stat-label">球隊排名</span>
+          <span class="profile-stat-label">全聯盟球隊排名</span>
           <span class="profile-stat-value">{{ teamRank }}</span>
         </div>
         <div class="profile-stat-box">
@@ -181,13 +174,62 @@ const enterAdmin = () => {
       </div>
     </div>
 
-    <!-- Admin Shortcut -->
-    <div @click="enterAdmin" class="card admin-shortcut-card">
-      <div class="admin-shortcut-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>管理員主控台</span>
+    <!-- Three Rich Action Buttons -->
+    <div class="profile-actions-grid">
+      <!-- Card 1: Match Score -->
+      <div @click="store.currentView = 'view-match'" class="action-card action-card-match">
+        <div class="action-card-title">對戰 & 輸入比分</div>
+        <div class="action-card-desc">
+          <span>快速配對、開打後</span>
+          <span>記錄比分</span>
+        </div>
+        <div class="action-card-icon">
+          <!-- Racket and Ball SVG -->
+          <svg class="icon-racket" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="4">
+            <!-- Racket oval -->
+            <ellipse cx="60" cy="40" rx="20" ry="28" transform="rotate(30 60 40)" stroke-width="6" />
+            <!-- Racket string grid -->
+            <path d="M 47 25 L 67 61 M 52 22 L 72 58 M 42 28 L 62 64 M 37 32 L 57 68 M 53 17 L 33 53 M 58 20 L 38 56 M 63 23 L 43 59 M 68 26 L 48 62" stroke-width="2" opacity="0.6"/>
+            <!-- Racket throat/handle -->
+            <path d="M 46 62 L 20 88" stroke-width="8" stroke-linecap="round" />
+            <!-- Handle grip -->
+            <path d="M 28 80 L 15 93" stroke-width="10" stroke="white" stroke-linecap="round" />
+            <!-- Tennis ball -->
+            <circle cx="75" cy="80" r="12" fill="#E4F028" stroke="#1D5D3A" stroke-width="3" />
+            <!-- Ball seam -->
+            <path d="M 67 74 A 12 12 0 0 1 83 90" stroke="#1D5D3A" stroke-width="2" fill="none" />
+          </svg>
+        </div>
       </div>
-      <button class="btn btn-sm btn-accent" style="width: auto;">進入審核</button>
+
+      <!-- Card 2: Rankings -->
+      <div @click="store.currentView = 'view-ranking'" class="action-card action-card-ranking">
+        <div class="action-card-title">查看排名</div>
+        <div class="action-card-desc">
+          <span>個人與球隊排名</span>
+          <span>掌握最新名次</span>
+        </div>
+        <div class="action-card-icon">
+          <!-- Trophy SVG -->
+          <svg class="icon-trophy" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Card 3: Add Member -->
+      <div @click="store.currentView = 'view-add-member'" class="action-card action-card-member">
+        <div class="action-card-title">新增球員</div>
+        <div class="action-card-desc">
+          <span>新增球員資料</span>
+          <span>加入聯盟名單</span>
+        </div>
+        <div class="action-card-icon-container">
+          <svg class="icon-user-add" viewBox="0 0 24 24" fill="currentColor" style="width: 38px; height: 38px; color: #ffffff;">
+            <path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+          </svg>
+        </div>
+      </div>
     </div>
 
     <!-- Recent Match Section -->

@@ -264,7 +264,7 @@ const drawChart = () => {
               >*</span>
             </div>
             <div class="ranking-team">
-              {{ (player.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無球隊' }}
+              {{ [...(player.teams.value || [])].sort((a, b) => (a.value.teamID?.value || '').localeCompare(b.value.teamID?.value || '')).map(t => t.value.teamName.value).join(', ') || '無球隊' }}
             </div>
           </div>
           <div class="ranking-score-box">

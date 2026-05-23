@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { store, refreshAllData, showToast, removeToast } from '../scripts/store';
 
 // Import child views
@@ -42,6 +42,72 @@ const handleToastRetry = (toast) => {
   removeToast(toast.id);
 };
 
+// Hash routing configuration
+const viewToHash = {
+  'view-login': '#/login',
+  'view-profile': '#/profile',
+  'view-match': '#/match',
+  'view-ranking': '#/ranking',
+  'view-add-member': '#/add-member',
+  'view-admin': '#/admin',
+  'view-error': '#/error'
+};
+
+const hashToView = {
+  '#/login': 'view-login',
+  '#/profile': 'view-profile',
+  '#/match': 'view-match',
+  '#/ranking': 'view-ranking',
+  '#/add-member': 'view-add-member',
+  '#/admin': 'view-admin',
+  '#/error': 'view-error'
+};
+
+// Route synchronization with auth checking
+const syncRoute = () => {
+  const hash = window.location.hash;
+  const targetView = hashToView[hash];
+  
+  if (!targetView) {
+    // If no route matches or is empty, redirect
+    if (store.currentUser) {
+      window.location.hash = '#/profile';
+    } else {
+      window.location.hash = '#/login';
+    }
+    return;
+  }
+  
+  // Guard check: unauthorized routes redirect to login
+  if (!store.currentUser && targetView !== 'view-login' && targetView !== 'view-add-member' && targetView !== 'view-error') {
+    window.location.hash = '#/login';
+    return;
+  }
+  
+  // Guard check: authorized users cannot view the login form
+  if (store.currentUser && targetView === 'view-login') {
+    window.location.hash = '#/profile';
+    return;
+  }
+  
+  if (store.currentView !== targetView) {
+    store.currentView = targetView;
+  }
+};
+
+// Sync store view changes to address bar
+watch(() => store.currentView, (newView) => {
+  const targetHash = viewToHash[newView];
+  if (targetHash && window.location.hash !== targetHash) {
+    window.location.hash = targetHash;
+  }
+});
+
+// Watch address bar hash changes
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', syncRoute);
+}
+
 // Lifecycle: startup data synchronization and auto login
 onMounted(async () => {
   try {
@@ -58,14 +124,12 @@ onMounted(async () => {
     const foundUser = store.members.find(m => m.playerPhone.value === savedPhone);
     if (foundUser) {
       store.currentUser = foundUser;
-      store.currentView = 'view-profile';
       showToast(`歡迎回來，${foundUser.playerName.value}！`, 'success');
-      return;
     }
   }
 
-  // Fallback to login
-  store.currentView = 'view-login';
+  // Initialize route sync
+  syncRoute();
 });
 </script>
 
