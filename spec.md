@@ -1,7 +1,7 @@
 這是一個基於 Netlify 前端託管與 Kintone 雲端資料庫（或後台管理系統）所建構的 Web App，請在設計上考慮這兩者的整合特性。
 
 專案結構與程式碼風格規範：
-	- 採用 astro 打包, 並建立 netlify.toml 檔案, 專案會透過 github 自動 deploy 到 netlify, 
+	- 採用 astro 打包 + vue3, 並建立 netlify.toml 檔案, 專案會透過 github 自動 deploy 到 netlify, 
 	- 須依功能與模組進行解耦（Decoupling）與分檔管理。
 	- netlify function directory 的路徑為: netlify/functions
 

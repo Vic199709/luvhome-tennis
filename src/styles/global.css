@@ -926,3 +926,167 @@ body {
   width: 24px;
   height: 24px;
 }
+
+/* ===================================================
+   ⚠️ COMPREHENSIVE ERROR HANDLING STYLES
+   =================================================== */
+
+/* 1. Field-Level Errors */
+.input-error {
+  border-color: var(--color-danger) !important;
+  background-color: #FEF2F2 !important;
+  animation: shake 0.4s ease-in-out;
+}
+
+.input-error-message {
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+/* 2. Form-Level Errors */
+.form-error-banner {
+  background-color: #FEF2F2;
+  border: 1.5px solid #FCA5A5;
+  border-radius: var(--border-radius-sm);
+  padding: 16px;
+  margin-bottom: 20px;
+  color: #B91C1C;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-margin-top: 80px;
+  text-align: left;
+}
+
+.form-error-banner-title {
+  font-weight: 700;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-error-banner-list {
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 3. System-Level Errors / Toast Notification */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: calc(100% - 32px);
+  max-width: 440px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background-color: var(--color-bg-card);
+  color: var(--color-text-dark);
+  padding: 14px 16px;
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  border-left: 5px solid var(--color-primary);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success { border-left-color: var(--color-success); }
+.toast-error { border-left-color: var(--color-danger); }
+.toast-warning { border-left-color: var(--color-accent); }
+.toast-info { border-left-color: #3B82F6; }
+
+.toast-btn-retry {
+  background-color: var(--color-danger);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: auto;
+  transition: background-color var(--transition-fast);
+}
+
+.toast-btn-retry:hover {
+  background-color: #DC2626;
+}
+
+/* 4. Page-Level Errors (Full Page Error) */
+.error-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 100px);
+  padding: 24px;
+  text-align: center;
+  background-color: var(--color-bg-page);
+  gap: 20px;
+}
+
+.error-illustration {
+  width: 160px;
+  height: 160px;
+  margin-bottom: 8px;
+  animation: float-illustration 3s ease-in-out infinite;
+}
+
+@keyframes float-illustration {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.error-page-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.error-page-desc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  max-width: 325px;
+  line-height: 1.6;
+}
+
+.error-escape-routes {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 12px;
+}
+

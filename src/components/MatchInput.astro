@@ -7,7 +7,8 @@
   </h2>
 
   <div class="card">
-    <form id="match-form" onsubmit="event.preventDefault();">
+    <form id="match-form" onsubmit="event.preventDefault();" novalidate>
+      <div id="match-form-error" class="form-error-banner hidden"></div>
       <!-- Singles / Doubles Toggle -->
       <div class="form-group">
         <label class="form-label">比賽種類</label>

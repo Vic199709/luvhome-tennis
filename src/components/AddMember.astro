@@ -7,7 +7,8 @@
   </h2>
 
   <div class="card">
-    <form id="add-member-form" onsubmit="event.preventDefault();">
+    <form id="add-member-form" onsubmit="event.preventDefault();" novalidate>
+      <div id="add-member-form-error" class="form-error-banner hidden"></div>
       <!-- Player Name -->
       <div class="form-group">
         <label for="member-name" class="form-label">會員姓名</label>

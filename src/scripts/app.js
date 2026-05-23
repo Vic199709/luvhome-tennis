@@ -48,34 +48,145 @@ const API = {
   }).then(res => res.json())
 };
 
-// Toast Notifications
-function showToast(message, type = 'info') {
+// Toast Notifications with optional Retry Callback
+function showToast(message, type = 'info', retryCallback = null) {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.innerHTML = `
-    <span>${message}</span>
-    <button style="background:none; border:none; color:inherit; font-size:16px; cursor:pointer; font-weight:700;">×</button>
-  `;
+  
+  let innerHTML = `<span>${message}</span>`;
+  if (retryCallback && typeof retryCallback === 'function') {
+    innerHTML += `<button class="toast-btn-retry">重試</button>`;
+  }
+  innerHTML += `<button class="toast-close-btn" style="background:none; border:none; color:inherit; font-size:18px; cursor:pointer; font-weight:700; padding: 2px 6px; line-height: 1;">×</button>`;
+  
+  toast.innerHTML = innerHTML;
 
-  toast.querySelector('button').addEventListener('click', () => {
+  // Close event
+  toast.querySelector('.toast-close-btn').addEventListener('click', () => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   });
+
+  // Retry event
+  if (retryCallback) {
+    toast.querySelector('.toast-btn-retry').addEventListener('click', () => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+      retryCallback();
+    });
+  }
 
   container.appendChild(toast);
   // Trigger transition
   setTimeout(() => toast.classList.add('show'), 10);
 
-  // Auto remove
-  setTimeout(() => {
-    if (toast.parentNode) {
-      toast.classList.remove('show');
-      setTimeout(() => toast.remove(), 300);
+  // Auto remove only if no retry callback to give user time to click
+  if (!retryCallback) {
+    setTimeout(() => {
+      if (toast.parentNode) {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }
+    }, 4500);
+  }
+}
+
+// Clear all field-level and form-level errors from a form
+function clearFormErrors(formElement, bannerElementId) {
+  formElement.querySelectorAll('.input-error').forEach(el => {
+    el.classList.remove('input-error');
+  });
+  formElement.querySelectorAll('.input-error-message').forEach(el => {
+    el.remove();
+  });
+  
+  const banner = document.getElementById(bannerElementId);
+  if (banner) {
+    banner.innerHTML = '';
+    banner.classList.add('hidden');
+  }
+}
+
+// Show field-level error underneath an input field
+function showFieldError(inputElement, errorMessage) {
+  inputElement.classList.add('input-error');
+  
+  // Prevent duplicate messages
+  const existingMsg = inputElement.parentNode.querySelector('.input-error-message');
+  if (existingMsg) existingMsg.remove();
+  
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'input-error-message';
+  msgDiv.innerHTML = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>${errorMessage}</span>
+  `;
+  inputElement.parentNode.appendChild(msgDiv);
+}
+
+// Show form-level error banner at the top of the form and scroll to it
+function showFormErrorBanner(bannerElementId, errorList) {
+  const banner = document.getElementById(bannerElementId);
+  if (!banner) return;
+  
+  banner.innerHTML = `
+    <div class="form-error-banner-title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>請修正以下表單錯誤：</span>
+    </div>
+    <ul class="form-error-banner-list">
+      ${errorList.map(err => `<li>${err}</li>`).join('')}
+    </ul>
+  `;
+  banner.classList.remove('hidden');
+  banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// Show Full Page Error page (independent error screen)
+function showFullPageError(title, description, backCallback = null) {
+  // Hide all main containers and views
+  document.querySelectorAll('.content-area, .login-container').forEach(view => {
+    view.classList.add('hidden');
+  });
+  
+  // Hide bottom nav and header logout button to simulate standalone error page
+  const bottomNav = document.getElementById('bottom-nav-bar');
+  if (bottomNav) bottomNav.classList.add('hidden');
+  
+  const logoutBtn = document.getElementById('btn-logout');
+  if (logoutBtn) logoutBtn.classList.add('hidden');
+  
+  const errorView = document.getElementById('view-error');
+  if (errorView) {
+    if (title) errorView.querySelector('.error-page-title').innerText = title;
+    if (description) errorView.querySelector('.error-page-desc').innerText = description;
+    errorView.classList.remove('hidden');
+  }
+
+  // Setup escape button event listeners
+  const btnBack = document.getElementById('btn-error-back');
+  const btnHome = document.getElementById('btn-error-home');
+
+  btnBack.onclick = () => {
+    if (backCallback) {
+      backCallback();
+    } else {
+      navigateTo('view-login');
     }
-  }, 4000);
+  };
+
+  btnHome.onclick = () => {
+    if (state.currentUser) {
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
+      if (bottomNav) bottomNav.classList.remove('hidden');
+      navigateTo('view-profile');
+    } else {
+      navigateTo('view-login');
+    }
+  };
 }
 
 // Fetch all database records and cache them
@@ -102,7 +213,21 @@ async function refreshAllData() {
     }
   } catch (error) {
     console.error('Failed to load data:', error);
-    showToast('無法從資料庫同步數據，請檢查網路連線', 'error');
+    
+    if (state.members.length === 0) {
+      // Critical initial load crash - show Full Page Error
+      showFullPageError(
+        '資料庫連線失敗！ ⚡',
+        '無法與後端伺服器或 Kintone 資料庫取得連線。這可能是您的網路異常或 Astro 開發伺服器離線。',
+        () => {
+          window.location.reload();
+        }
+      );
+    } else {
+      // Non-blocking background sync error
+      showToast('同步伺服器數據失敗，請檢查網路。', 'error', refreshAllData);
+    }
+    throw error;
   }
 }
 
@@ -120,8 +245,8 @@ function playerHasUnverifiedMatches(playerId) {
 
 // Navigation / View Router
 function navigateTo(viewId) {
-  // Hide all views
-  document.querySelectorAll('.content-area, .login-container').forEach(view => {
+  // Hide all views, including error page
+  document.querySelectorAll('.content-area, .login-container, .error-page-container').forEach(view => {
     view.classList.add('hidden');
   });
 
@@ -160,12 +285,22 @@ function initLogin() {
   const loginForm = document.getElementById('login-form');
   const loginPhoneInput = document.getElementById('login-phone');
   
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  // Submit function to support retry
+  const handleLoginSubmit = async () => {
+    clearFormErrors(loginForm, 'login-form-error');
     const phone = loginPhoneInput.value.trim();
     
-    if (!/^09[0-9]{8}$/.test(phone)) {
-      showToast('手機格式不正確，應為 09 開頭的 10 碼數字', 'error');
+    let errors = [];
+    if (!phone) {
+      errors.push('手機號碼欄位不能為空。');
+      showFieldError(loginPhoneInput, '此欄位必填。');
+    } else if (!/^09[0-9]{8}$/.test(phone)) {
+      errors.push('手機號碼格式不正確，應為 09 開頭的 10 碼數字。');
+      showFieldError(loginPhoneInput, '格式不合規：09開頭共10碼數字。');
+    }
+    
+    if (errors.length > 0) {
+      showFormErrorBanner('login-form-error', errors);
       return;
     }
     
@@ -179,7 +314,8 @@ function initLogin() {
       const foundUser = state.members.find(m => m.playerPhone.value === phone);
       
       if (!foundUser) {
-        showToast('找不到此手機號碼的會員，請至「新增會員」註冊', 'error');
+        showFieldError(loginPhoneInput, '會員不存在。');
+        showFormErrorBanner('login-form-error', ['找不到此手機號碼的會員，請先於下方「新增會員」註冊。']);
         submitBtn.disabled = false;
         submitBtn.querySelector('span').innerText = '驗證並登入';
         return;
@@ -190,20 +326,36 @@ function initLogin() {
       localStorage.setItem('tennis_player_phone', phone);
       
       // Setup UI for logged in state
-      document.getElementById('btn-logout').classList.remove('hidden');
-      document.getElementById('bottom-nav-bar').classList.remove('hidden');
+      const logoutBtn = document.getElementById('btn-logout');
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
+      const bottomNav = document.getElementById('bottom-nav-bar');
+      if (bottomNav) bottomNav.classList.remove('hidden');
       
       showToast(`歡迎回來，${foundUser.playerName.value}！`, 'success');
       
       // Navigate to Home (Profile Page)
       navigateTo('view-profile');
     } catch (err) {
-      showToast('登入失敗: ' + err.message, 'error');
+      console.error('Login submit failed:', err);
+      showToast('登入時伺服器發生異常，請重試或聯繫管理員。', 'error', handleLoginSubmit);
     } finally {
       submitBtn.disabled = false;
       submitBtn.querySelector('span').innerText = '驗證並登入';
     }
+  };
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleLoginSubmit();
   });
+
+  const linkToRegister = document.getElementById('link-to-register');
+  if (linkToRegister) {
+    linkToRegister.addEventListener('click', (e) => {
+      e.preventDefault();
+      navigateTo('view-add-member');
+    });
+  }
 }
 
 // LOGOUT
@@ -505,24 +657,61 @@ function initMatchForm() {
 
   // Submit Match Form
   const matchForm = document.getElementById('match-form');
-  matchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  
+  const handleMatchSubmit = async () => {
+    clearFormErrors(matchForm, 'match-form-error');
 
-    const matchType = document.getElementById('match-type').value;
-    const matchDateTimeLocal = document.getElementById('match-datetime').value;
-    // Convert local datetime to ISO UTC format
-    const matchDateTime = new Date(matchDateTimeLocal).toISOString();
+    const matchTypeEl = document.getElementById('match-type');
+    const matchDateTimeEl = document.getElementById('match-datetime');
+    const playerA1El = document.getElementById('select-player-a1');
+    const teamA1El = document.getElementById('select-team-a1');
+    const playerB1El = document.getElementById('select-player-b1');
+    const teamB1El = document.getElementById('select-team-b1');
+    const scoreAEl = document.getElementById('score-a');
+    const scoreBEl = document.getElementById('score-b');
 
-    const playerA1 = document.getElementById('select-player-a1').value;
-    const teamA1 = document.getElementById('select-team-a1').value;
-    const playerB1 = document.getElementById('select-player-b1').value;
-    const teamB1 = document.getElementById('select-team-b1').value;
+    const matchType = matchTypeEl.value;
+    const matchDateTimeLocal = matchDateTimeEl.value;
+    
+    let errors = [];
 
-    const scoreA = parseInt(document.getElementById('score-a').value, 10);
-    const scoreB = parseInt(document.getElementById('score-b').value, 10);
+    // Datetime Check
+    if (!matchDateTimeLocal) {
+      errors.push('比賽時間為必填欄位。');
+      showFieldError(matchDateTimeEl, '請選擇時間。');
+    }
+    
+    // Player A1
+    if (!playerA1El.value) {
+      errors.push('球員 A1 為必選欄位。');
+      showFieldError(playerA1El, '請選擇球員。');
+    }
+    if (!teamA1El.value) {
+      errors.push('球員 A1 的代表球隊為必選欄位。');
+      showFieldError(teamA1El, '請選擇球隊。');
+    }
 
-    // Collect all players involved
-    const playersList = [playerA1, playerB1];
+    // Player B1
+    if (!playerB1El.value) {
+      errors.push('球員 B1 為必選欄位。');
+      showFieldError(playerB1El, '請選擇球員。');
+    }
+    if (!teamB1El.value) {
+      errors.push('球員 B1 的代表球隊為必選欄位。');
+      showFieldError(teamB1El, '請選擇球隊。');
+    }
+
+    const playerA1 = playerA1El.value;
+    const teamA1 = teamA1El.value;
+    const playerB1 = playerB1El.value;
+    const teamB1 = teamB1El.value;
+
+    const scoreA = parseInt(scoreAEl.value, 10);
+    const scoreB = parseInt(scoreBEl.value, 10);
+
+    const playersList = [];
+    if (playerA1) playersList.push(playerA1);
+    if (playerB1) playersList.push(playerB1);
     
     const teamA = [{ playerID: playerA1, teamID: teamA1 }];
     const teamB = [{ playerID: playerB1, teamID: teamB1 }];
@@ -533,27 +722,66 @@ function initMatchForm() {
       const playerB2 = selectPlayerB2.value;
       const teamB2 = selectTeamB2.value;
 
-      playersList.push(playerA2, playerB2);
+      if (!playerA2) {
+        errors.push('雙打模式下，球員 A2 為必選欄位。');
+        showFieldError(selectPlayerA2, '請選擇球員。');
+      }
+      if (!teamA2) {
+        errors.push('雙打模式下，球員 A2 的代表球隊為必選欄位。');
+        showFieldError(selectTeamA2, '請選擇球隊。');
+      }
+      if (!playerB2) {
+        errors.push('雙打模式下，球員 B2 為必選欄位。');
+        showFieldError(selectPlayerB2, '請選擇球員。');
+      }
+      if (!teamB2) {
+        errors.push('雙打模式下，球員 B2 的代表球隊為必選欄位。');
+        showFieldError(selectTeamB2, '請選擇球隊。');
+      }
+
+      if (playerA2) playersList.push(playerA2);
+      if (playerB2) playersList.push(playerB2);
+
       teamA.push({ playerID: playerA2, teamID: teamA2 });
       teamB.push({ playerID: playerB2, teamID: teamB2 });
     }
 
     // 1. Validation - Duplicate players
-    const uniquePlayers = new Set(playersList);
-    if (uniquePlayers.size !== playersList.length) {
-      showToast('同一個球員不能重複出現在不同的對戰位置！', 'error');
-      return;
+    if (playersList.length > 1) {
+      const duplicates = playersList.filter((item, index) => playersList.indexOf(item) !== index);
+      if (duplicates.length > 0) {
+        errors.push('同一個球員不能重複出現在不同的對戰位置！');
+        
+        // Highlight duplicate fields
+        if (duplicates.includes(playerA1)) showFieldError(playerA1El, '球員名單重複。');
+        if (duplicates.includes(playerB1)) showFieldError(playerB1El, '球員名單重複。');
+        if (state.matchMode === 'doubles') {
+          if (duplicates.includes(selectPlayerA2.value)) showFieldError(selectPlayerA2, '球員名單重複。');
+          if (duplicates.includes(selectPlayerB2.value)) showFieldError(selectPlayerB2, '球員名單重複。');
+        }
+      }
     }
 
     // 2. Validation - Score
-    if (!isValidTennisScore(scoreA, scoreB)) {
-      showToast('比數不符合網球規則！(需為 6-0~6-4, 7-5, 或 7-6 搶七)', 'error');
+    if (!isNaN(scoreA) && !isNaN(scoreB)) {
+      if (!isValidTennisScore(scoreA, scoreB)) {
+        errors.push('比數不符合網球規則！(需為 6-0~6-4, 7-5, 或 7-6 搶七，且不能平手。)');
+        showFieldError(scoreAEl, '比數不合規。');
+        showFieldError(scoreBEl, '比數不合規。');
+      }
+    }
+
+    if (errors.length > 0) {
+      showFormErrorBanner('match-form-error', errors);
       return;
     }
 
     const submitBtn = document.getElementById('btn-submit-match');
     submitBtn.disabled = true;
     submitBtn.querySelector('span').innerText = '發送中...';
+
+    // Convert local datetime to ISO UTC format
+    const matchDateTime = new Date(matchDateTimeLocal).toISOString();
 
     try {
       const res = await API.submitMatch({
@@ -574,14 +802,20 @@ function initMatchForm() {
         // Return to Home (Profile Page)
         navigateTo('view-profile');
       } else {
-        showToast('提交比分失敗: ' + (res.error || '未知錯誤'), 'error');
+        showToast('提交比分失敗: ' + (res.error || '未知伺服器錯誤'), 'error', handleMatchSubmit);
       }
     } catch (err) {
-      showToast('網路錯誤，提交失敗: ' + err.message, 'error');
+      console.error('Submit match failed:', err);
+      showToast('網路或系統操作異常，提交失敗，請重試。', 'error', handleMatchSubmit);
     } finally {
       submitBtn.disabled = false;
       submitBtn.querySelector('span').innerText = '送出比分紀錄';
     }
+  };
+
+  matchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    handleMatchSubmit();
   });
 }
 
@@ -891,12 +1125,41 @@ function renderAddMember() {
 function initAddMember() {
   const addForm = document.getElementById('add-member-form');
   
-  addForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  const handleAddMemberSubmit = async () => {
+    clearFormErrors(addForm, 'add-member-form-error');
 
-    const name = document.getElementById('member-name').value.trim();
-    const phone = document.getElementById('member-phone').value.trim();
-    const gender = document.querySelector('input[name="member-gender"]:checked').value;
+    const nameInput = document.getElementById('member-name');
+    const phoneInput = document.getElementById('member-phone');
+    const teamsContainer = document.getElementById('member-teams-checkboxes');
+    
+    const name = nameInput.value.trim();
+    const phone = phoneInput.value.trim();
+    const genderEl = document.querySelector('input[name="member-gender"]:checked');
+    const gender = genderEl ? genderEl.value : '男';
+    
+    let errors = [];
+
+    // Name Validation
+    if (!name) {
+      errors.push('會員姓名欄位為必填。');
+      showFieldError(nameInput, '姓名不可留空。');
+    }
+
+    // Phone Validation
+    if (!phone) {
+      errors.push('手機號碼欄位為必填。');
+      showFieldError(phoneInput, '手機號碼不可留空。');
+    } else if (!/^09[0-9]{8}$/.test(phone)) {
+      errors.push('手機號碼格式不正確，應為 09 開頭的 10 碼數字。');
+      showFieldError(phoneInput, '格式不合規：09開頭共10碼數字。');
+    } else {
+      // Check duplicate
+      const duplicate = state.members.some(m => m.playerPhone.value === phone);
+      if (duplicate) {
+        errors.push('該手機號碼已經被其他會員註冊使用。');
+        showFieldError(phoneInput, '此號碼已被註冊。');
+      }
+    }
     
     // Collect selected teams
     const checkboxes = document.querySelectorAll('input[name="reg-teams"]:checked');
@@ -908,19 +1171,12 @@ function initAddMember() {
     }));
 
     if (selectedTeams.length === 0) {
-      showToast('請至少選擇一個代表球隊！', 'error');
-      return;
+      errors.push('代表球隊欄位為必填，請至少選擇一個代表球隊。');
+      showFieldError(teamsContainer, '請勾選至少一個球隊。');
     }
 
-    if (!/^09[0-9]{8}$/.test(phone)) {
-      showToast('手機格式不正確，應為 09 開頭的 10 碼數字', 'error');
-      return;
-    }
-
-    // Check if phone number is already registered in members cache
-    const duplicate = state.members.some(m => m.playerPhone.value === phone);
-    if (duplicate) {
-      showToast('該手機號碼已經註冊，請直接登入！', 'error');
+    if (errors.length > 0) {
+      showFormErrorBanner('add-member-form-error', errors);
       return;
     }
 
@@ -957,14 +1213,20 @@ function initAddMember() {
           navigateTo('view-profile');
         }
       } else {
-        showToast('註冊失敗: ' + (res.error || '未知錯誤'), 'error');
+        showToast('註冊失敗: ' + (res.error || '未知伺服器錯誤'), 'error', handleAddMemberSubmit);
       }
     } catch (err) {
-      showToast('註冊失敗: ' + err.message, 'error');
+      console.error('Registration failed:', err);
+      showToast('網路或系統操作異常，註冊失敗，請重試。', 'error', handleAddMemberSubmit);
     } finally {
       submitBtn.disabled = false;
       submitBtn.querySelector('span').innerText = '新增並提交審核';
     }
+  };
+
+  addForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleAddMemberSubmit();
   });
 }
 
@@ -1168,24 +1430,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAddMember();
   initAdminPanel();
 
+  // Load database records on startup (e.g. for registration team dropdown)
+  try {
+    await refreshAllData();
+  } catch (err) {
+    console.error('Initial data load failed:', err);
+    // Note: refreshAllData has already rendered the full-page error view if state.members.length is 0
+    return;
+  }
+
   // Try auto login from local storage
   const savedPhone = localStorage.getItem('tennis_player_phone');
   
   if (savedPhone) {
-    try {
-      await refreshAllData();
-      const foundUser = state.members.find(m => m.playerPhone.value === savedPhone);
-      
-      if (foundUser) {
-        state.currentUser = foundUser;
-        document.getElementById('btn-logout').classList.remove('hidden');
-        document.getElementById('bottom-nav-bar').classList.remove('hidden');
-        navigateTo('view-profile');
-        showToast(`歡迎回來，${foundUser.playerName.value}！`, 'success');
-        return;
-      }
-    } catch (err) {
-      console.warn('Auto login failed:', err);
+    const foundUser = state.members.find(m => m.playerPhone.value === savedPhone);
+    
+    if (foundUser) {
+      state.currentUser = foundUser;
+      const logoutBtn = document.getElementById('btn-logout');
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
+      const bottomNav = document.getElementById('bottom-nav-bar');
+      if (bottomNav) bottomNav.classList.remove('hidden');
+      navigateTo('view-profile');
+      showToast(`歡迎回來，${foundUser.playerName.value}！`, 'success');
+      return;
     }
   }
 
