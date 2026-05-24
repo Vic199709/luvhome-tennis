@@ -14,6 +14,15 @@ const userTeams = computed(() => {
   });
 });
 
+import ModalSelect from './ModalSelect.vue';
+
+const profileTeamOptions = computed(() => {
+  return userTeams.value.map(t => ({
+    value: t.value.teamID.value,
+    label: t.value.teamName.value
+  }));
+});
+
 // Watch and automatically set activeTeamId if not set
 const activeTeamId = computed({
   get() {
@@ -29,11 +38,33 @@ const activeTeamId = computed({
 
 // 1. Stats Calculations
 const personalRank = computed(() => {
-  if (!user.value) return '-';
-  const sortedMembers = [...store.members].sort(
-    (a, b) => (parseInt(b.currentScore.value, 10) || 0) - (parseInt(a.currentScore.value, 10) || 0)
-  );
-  const rankIndex = sortedMembers.findIndex(m => m.$id.value === user.value.$id.value);
+  if (!user.value || !activeTeamId.value) return '-';
+  const uId = user.value.$id.value;
+  const tId = activeTeamId.value;
+  
+  const list = [];
+  store.members.forEach(member => {
+    const memberTeams = member.teams?.value || [];
+    memberTeams.forEach(t => {
+      const teamId = t.value.teamID.value;
+      const playerTeamHistories = store.history.filter(h => {
+        if (h.playerID.value !== member.$id.value || h.teamID.value !== teamId) return false;
+        const match = store.matches.find(m => m.$id.value === h.matchID.value);
+        return match && match.isVerified.value === 'true';
+      });
+      const score = playerTeamHistories.reduce((sum, h) => {
+        return sum + (parseInt(h.pointChange.value, 10) || 0);
+      }, 0);
+      list.push({
+        playerID: member.$id.value,
+        teamID: teamId,
+        score: score
+      });
+    });
+  });
+  
+  list.sort((a, b) => b.score - a.score);
+  const rankIndex = list.findIndex(item => item.playerID === uId && item.teamID === tId);
   return rankIndex !== -1 ? `# ${rankIndex + 1}` : '# -';
 });
 
@@ -42,7 +73,7 @@ const teamRank = computed(() => {
   const sortedTeams = [...store.teams].sort(
     (a, b) => (parseInt(b.teamScore.value, 10) || 0) - (parseInt(a.teamScore.value, 10) || 0)
   );
-  const rankIndex = sortedTeams.findIndex(t => t.$id.value === activeTeamId.value);
+  const rankIndex = sortedTeams.findIndex(t => t.teamID?.value === activeTeamId.value);
   return rankIndex !== -1 ? `${rankIndex + 1} / ${sortedTeams.length} 隊` : `- / ${sortedTeams.length} 隊`;
 });
 
@@ -52,8 +83,17 @@ const hasPending = computed(() => {
 });
 
 const displayScore = computed(() => {
-  if (!user.value) return '-';
-  return parseInt(user.value.currentScore.value, 10) || 0;
+  if (!user.value || !activeTeamId.value) return 0;
+  const uId = user.value.$id.value;
+  const tId = activeTeamId.value;
+  const playerTeamHistories = store.history.filter(h => {
+    if (h.playerID.value !== uId || h.teamID.value !== tId) return false;
+    const match = store.matches.find(m => m.$id.value === h.matchID.value);
+    return match && match.isVerified.value === 'true';
+  });
+  return playerTeamHistories.reduce((sum, h) => {
+    return sum + (parseInt(h.pointChange.value, 10) || 0);
+  }, 0);
 });
 
 // 2. Latest Match Calculations
@@ -141,16 +181,14 @@ const latestMatchPointsChange = computed(() => {
           <h2 class="profile-name">{{ user.playerName.value }}</h2>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <label style="font-size: 11px; opacity: 0.8;">所屬球隊</label>
-            <select v-model="activeTeamId" class="profile-team-select">
-              <option value="" v-if="userTeams.length === 0">無球隊資訊</option>
-              <option 
-                v-for="t in userTeams" 
-                :key="t.value.teamID.value" 
-                :value="t.value.teamID.value"
-              >
-                {{ t.value.teamName.value }}
-              </option>
-            </select>
+            <ModalSelect
+              v-model="activeTeamId"
+              :options="profileTeamOptions"
+              title="切換所屬球隊"
+              placeholder="無球隊資訊"
+              class="profile-team-select-wrapper"
+              :disabled="userTeams.length === 0"
+            />
           </div>
         </div>
       </div>

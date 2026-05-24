@@ -1,6 +1,7 @@
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { store, refreshAllData, showToast, API } from '../scripts/store';
+import ModalSelect from './ModalSelect.vue';
 
 const memberName = ref('');
 const memberPhone = ref('');
@@ -10,6 +11,10 @@ const checkedTeams = ref([]);
 const fieldErrors = ref({});
 const formErrors = ref([]);
 const isSubmitting = ref(false);
+
+const teamOptions = computed(() => {
+  return store.teams.map(t => ({ value: t.$id.value, label: t.teamName.value }));
+});
 
 const handleRegisterSubmit = async () => {
   fieldErrors.value = {};
@@ -183,28 +188,14 @@ const handleRegisterSubmit = async () => {
         <!-- Multi-select Representative Teams -->
         <div class="form-group">
           <label class="form-label">代表球隊 (可多選)</label>
-          <div class="multi-select-container">
-            <div 
-              v-if="store.teams.length === 0" 
-              style="color: var(--color-text-muted); font-size: 14px; padding: 4px 0;"
-            >
-              載入球隊中...
-            </div>
-            <label 
-              v-for="t in store.teams" 
-              :key="t.$id.value" 
-              class="checkbox-label"
-              style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; font-weight: 500;"
-            >
-              <input 
-                type="checkbox" 
-                v-model="checkedTeams" 
-                :value="t.$id.value" 
-                :disabled="isSubmitting"
-              />
-              <span>{{ t.teamName.value }}</span>
-            </label>
-          </div>
+          <ModalSelect
+            v-model="checkedTeams"
+            :options="teamOptions"
+            :multiple="true"
+            title="選擇代表球隊 (可多選)"
+            placeholder="請選擇代表球隊"
+            :disabled="isSubmitting"
+          />
         </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top: 10px;" :disabled="isSubmitting">

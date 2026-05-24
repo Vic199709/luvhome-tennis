@@ -18,7 +18,7 @@ const setDefaultDateTime = () => {
 setDefaultDateTime();
 
 // Player selections
-const playerA1 = ref(store.currentUser ? store.currentUser.$id.value : '');
+const playerA1 = ref('');
 const teamA1 = ref('');
 const playerA2 = ref('');
 const teamA2 = ref('');
@@ -30,12 +30,6 @@ const teamB2 = ref('');
 // Score selections
 const scoreA = ref('6');
 const scoreB = ref('4');
-
-// Team options per player selection
-const playerA1Teams = ref([]);
-const playerA2Teams = ref([]);
-const playerB1Teams = ref([]);
-const playerB2Teams = ref([]);
 
 // Validation state
 const fieldErrors = ref({});
@@ -52,34 +46,97 @@ const mode = computed({
   }
 });
 
-// Watch players and auto-populate representative team dropdowns
-const updateTeamsForPlayer = (playerId, targetTeamsRef, targetSelectedValRef) => {
-  if (!playerId) {
-    targetTeamsRef.value = [];
-    targetSelectedValRef.value = '';
-    return;
-  }
-  const member = store.members.find(m => m.$id.value === playerId);
-  if (member && member.teams?.value) {
-    targetTeamsRef.value = member.teams.value.map(t => ({
-      id: t.value.teamID.value,
-      name: t.value.teamName.value
-    })).sort((a, b) => a.id.localeCompare(b.id));
-    if (targetTeamsRef.value.length > 0) {
-      targetSelectedValRef.value = targetTeamsRef.value[0].id;
-    } else {
-      targetSelectedValRef.value = '';
-    }
-  } else {
-    targetTeamsRef.value = [];
-    targetSelectedValRef.value = '';
-  }
+// Filter players by team ID
+const getPlayersForTeam = (teamId) => {
+  if (!teamId) return [];
+  return store.members.filter(m => {
+    const mTeams = m.teams?.value || [];
+    return mTeams.some(t => t.value.teamID.value === teamId);
+  });
 };
 
-watch(playerA1, (val) => updateTeamsForPlayer(val, playerA1Teams, teamA1), { immediate: true });
-watch(playerA2, (val) => updateTeamsForPlayer(val, playerA2Teams, teamA2), { immediate: true });
-watch(playerB1, (val) => updateTeamsForPlayer(val, playerB1Teams, teamB1), { immediate: true });
-watch(playerB2, (val) => updateTeamsForPlayer(val, playerB2Teams, teamB2), { immediate: true });
+const playersForTeamA1 = computed(() => getPlayersForTeam(teamA1.value));
+const playersForTeamA2 = computed(() => getPlayersForTeam(teamA2.value));
+const playersForTeamB1 = computed(() => getPlayersForTeam(teamB1.value));
+const playersForTeamB2 = computed(() => getPlayersForTeam(teamB2.value));
+
+import ModalSelect from './ModalSelect.vue';
+
+const teamOptions = computed(() => {
+  return store.teams.map(t => ({ value: t.teamID.value, label: t.teamName.value }));
+});
+
+const playerA1Options = computed(() => {
+  return playersForTeamA1.value.map(m => ({
+    value: m.$id.value,
+    label: `${m.playerName.value} (${m.playerPhone.value.slice(-4)})`
+  }));
+});
+
+const playerA2Options = computed(() => {
+  return playersForTeamA2.value.map(m => ({
+    value: m.$id.value,
+    label: `${m.playerName.value} (${m.playerPhone.value.slice(-4)})`
+  }));
+});
+
+const playerB1Options = computed(() => {
+  return playersForTeamB1.value.map(m => ({
+    value: m.$id.value,
+    label: `${m.playerName.value} (${m.playerPhone.value.slice(-4)})`
+  }));
+});
+
+const playerB2Options = computed(() => {
+  return playersForTeamB2.value.map(m => ({
+    value: m.$id.value,
+    label: `${m.playerName.value} (${m.playerPhone.value.slice(-4)})`
+  }));
+});
+
+const scoreOptions = computed(() => {
+  return Array.from({ length: 8 }, (_, i) => ({ value: String(i), label: String(i) }));
+});
+
+
+// Set initial default for player A1 to current user and auto-select their first team
+const initDefaultA1 = () => {
+  if (store.currentUser) {
+    const teams = store.currentUser.teams?.value || [];
+    if (teams.length > 0) {
+      const sortedUserTeams = [...teams].sort((a, b) => a.value.teamID.value.localeCompare(b.value.teamID.value));
+      teamA1.value = sortedUserTeams[0].value.teamID.value;
+      playerA1.value = store.currentUser.$id.value;
+    }
+  }
+};
+initDefaultA1();
+
+// Watch teams to reset player if no longer valid under the selected team
+watch(teamA1, (newTeam) => {
+  const players = getPlayersForTeam(newTeam);
+  if (!players.some(p => p.$id.value === playerA1.value)) {
+    playerA1.value = '';
+  }
+});
+watch(teamA2, (newTeam) => {
+  const players = getPlayersForTeam(newTeam);
+  if (!players.some(p => p.$id.value === playerA2.value)) {
+    playerA2.value = '';
+  }
+});
+watch(teamB1, (newTeam) => {
+  const players = getPlayersForTeam(newTeam);
+  if (!players.some(p => p.$id.value === playerB1.value)) {
+    playerB1.value = '';
+  }
+});
+watch(teamB2, (newTeam) => {
+  const players = getPlayersForTeam(newTeam);
+  if (!players.some(p => p.$id.value === playerB2.value)) {
+    playerB2.value = '';
+  }
+});
 
 const handleMatchSubmit = async () => {
   fieldErrors.value = {};
@@ -310,92 +367,57 @@ const handleMatchSubmit = async () => {
           
           <!-- Player A1 -->
           <div class="player-select-row">
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">球員 A1</label>
-              <select 
-                v-model="playerA1" 
-                :class="['input-control select-player', { 'input-error': fieldErrors.playerA1 }]"
-                required
-              >
-                <option value="">選擇球員</option>
-                <option 
-                  v-for="m in store.members" 
-                  :key="m.$id.value" 
-                  :value="m.$id.value"
-                >
-                  {{ m.playerName.value }} ({{ m.playerPhone.value.slice(-4) }})
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.playerA1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.playerA1 }}</span>
-              </div>
-            </div>
-            
+            <!-- Team select (Left) -->
             <div class="form-group" style="margin-bottom: 8px;">
               <label class="form-label" style="font-size: 12px;">球隊 A1</label>
-              <select 
-                v-model="teamA1" 
-                :class="['input-control select-team', { 'input-error': fieldErrors.teamA1 }]"
-                required
-              >
-                <option value="">選擇球隊</option>
-                <option 
-                  v-for="t in playerA1Teams" 
-                  :key="t.id" 
-                  :value="t.id"
-                >
-                  {{ t.name }}
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.teamA1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.teamA1 }}</span>
-              </div>
+              <ModalSelect
+                v-model="teamA1"
+                :options="teamOptions"
+                title="選擇球隊 A1"
+                placeholder="選擇球隊"
+                :error="fieldErrors.teamA1"
+              />
+            </div>
+
+            <!-- Player select (Right) -->
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label" style="font-size: 12px;">球員 A1</label>
+              <ModalSelect
+                v-model="playerA1"
+                :options="playerA1Options"
+                title="選擇球員 A1"
+                placeholder="選擇球員"
+                :error="fieldErrors.playerA1"
+                :disabled="!teamA1"
+              />
             </div>
           </div>
 
           <!-- Player A2 (Doubles only) -->
           <div v-show="mode === 'doubles'" class="player-select-row">
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">球員 A2</label>
-              <select 
-                v-model="playerA2" 
-                :class="['input-control select-player', { 'input-error': fieldErrors.playerA2 }]"
-              >
-                <option value="">選擇球員</option>
-                <option 
-                  v-for="m in store.members" 
-                  :key="m.$id.value" 
-                  :value="m.$id.value"
-                >
-                  {{ m.playerName.value }} ({{ m.playerPhone.value.slice(-4) }})
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.playerA2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.playerA2 }}</span>
-              </div>
-            </div>
+            <!-- Team select (Left) -->
             <div class="form-group" style="margin-bottom: 8px;">
               <label class="form-label" style="font-size: 12px;">球隊 A2</label>
-              <select 
-                v-model="teamA2" 
-                :class="['input-control select-team', { 'input-error': fieldErrors.teamA2 }]"
-              >
-                <option value="">選擇球隊</option>
-                <option 
-                  v-for="t in playerA2Teams" 
-                  :key="t.id" 
-                  :value="t.id"
-                >
-                  {{ t.name }}
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.teamA2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.teamA2 }}</span>
-              </div>
+              <ModalSelect
+                v-model="teamA2"
+                :options="teamOptions"
+                title="選擇球隊 A2"
+                placeholder="選擇球隊"
+                :error="fieldErrors.teamA2"
+              />
+            </div>
+
+            <!-- Player select (Right) -->
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label" style="font-size: 12px;">球員 A2</label>
+              <ModalSelect
+                v-model="playerA2"
+                :options="playerA2Options"
+                title="選擇球員 A2"
+                placeholder="選擇球員"
+                :error="fieldErrors.playerA2"
+                :disabled="!teamA2"
+              />
             </div>
           </div>
         </div>
@@ -406,91 +428,57 @@ const handleMatchSubmit = async () => {
           
           <!-- Player B1 -->
           <div class="player-select-row">
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">球員 B1</label>
-              <select 
-                v-model="playerB1" 
-                :class="['input-control select-player', { 'input-error': fieldErrors.playerB1 }]"
-                required
-              >
-                <option value="">選擇球員</option>
-                <option 
-                  v-for="m in store.members" 
-                  :key="m.$id.value" 
-                  :value="m.$id.value"
-                >
-                  {{ m.playerName.value }} ({{ m.playerPhone.value.slice(-4) }})
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.playerB1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.playerB1 }}</span>
-              </div>
-            </div>
+            <!-- Team select (Left) -->
             <div class="form-group" style="margin-bottom: 8px;">
               <label class="form-label" style="font-size: 12px;">球隊 B1</label>
-              <select 
-                v-model="teamB1" 
-                :class="['input-control select-team', { 'input-error': fieldErrors.teamB1 }]"
-                required
-              >
-                <option value="">選擇球隊</option>
-                <option 
-                  v-for="t in playerB1Teams" 
-                  :key="t.id" 
-                  :value="t.id"
-                >
-                  {{ t.name }}
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.teamB1">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.teamB1 }}</span>
-              </div>
+              <ModalSelect
+                v-model="teamB1"
+                :options="teamOptions"
+                title="選擇球隊 B1"
+                placeholder="選擇球隊"
+                :error="fieldErrors.teamB1"
+              />
+            </div>
+
+            <!-- Player select (Right) -->
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label" style="font-size: 12px;">球員 B1</label>
+              <ModalSelect
+                v-model="playerB1"
+                :options="playerB1Options"
+                title="選擇球員 B1"
+                placeholder="選擇球員"
+                :error="fieldErrors.playerB1"
+                :disabled="!teamB1"
+              />
             </div>
           </div>
 
           <!-- Player B2 (Doubles only) -->
           <div v-show="mode === 'doubles'" class="player-select-row">
-            <div class="form-group" style="margin-bottom: 8px;">
-              <label class="form-label" style="font-size: 12px;">球員 B2</label>
-              <select 
-                v-model="playerB2" 
-                :class="['input-control select-player', { 'input-error': fieldErrors.playerB2 }]"
-              >
-                <option value="">選擇球員</option>
-                <option 
-                  v-for="m in store.members" 
-                  :key="m.$id.value" 
-                  :value="m.$id.value"
-                >
-                  {{ m.playerName.value }} ({{ m.playerPhone.value.slice(-4) }})
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.playerB2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.playerB2 }}</span>
-              </div>
-            </div>
+            <!-- Team select (Left) -->
             <div class="form-group" style="margin-bottom: 8px;">
               <label class="form-label" style="font-size: 12px;">球隊 B2</label>
-              <select 
-                v-model="teamB2" 
-                :class="['input-control select-team', { 'input-error': fieldErrors.teamB2 }]"
-              >
-                <option value="">選擇球隊</option>
-                <option 
-                  v-for="t in playerB2Teams" 
-                  :key="t.id" 
-                  :value="t.id"
-                >
-                  {{ t.name }}
-                </option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.teamB2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.teamB2 }}</span>
-              </div>
+              <ModalSelect
+                v-model="teamB2"
+                :options="teamOptions"
+                title="選擇球隊 B2"
+                placeholder="選擇球隊"
+                :error="fieldErrors.teamB2"
+              />
+            </div>
+
+            <!-- Player select (Right) -->
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label" style="font-size: 12px;">球員 B2</label>
+              <ModalSelect
+                v-model="playerB2"
+                :options="playerB2Options"
+                title="選擇球員 B2"
+                placeholder="選擇球員"
+                :error="fieldErrors.playerB2"
+                :disabled="!teamB2"
+              />
             </div>
           </div>
         </div>
@@ -501,33 +489,23 @@ const handleMatchSubmit = async () => {
           <div class="player-select-row">
             <div class="form-group" style="margin-bottom: 0;">
               <label for="score-a" class="form-label" style="font-size: 12px; color: var(--color-primary);">A 隊比數</label>
-              <select 
-                v-model="scoreA" 
-                id="score-a" 
-                :class="['input-control', { 'input-error': fieldErrors.scoreA }]"
-                required
-              >
-                <option v-for="n in 8" :key="n - 1" :value="String(n - 1)">{{ n - 1 }}</option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.scoreA">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.scoreA }}</span>
-              </div>
+              <ModalSelect
+                v-model="scoreA"
+                :options="scoreOptions"
+                title="選擇 A 隊比數"
+                placeholder="A 隊比數"
+                :error="fieldErrors.scoreA"
+              />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label for="score-b" class="form-label" style="font-size: 12px; color: var(--color-accent-dark);">B 隊比數</label>
-              <select 
-                v-model="scoreB" 
-                id="score-b" 
-                :class="['input-control', { 'input-error': fieldErrors.scoreB }]"
-                required
-              >
-                <option v-for="n in 8" :key="n - 1" :value="String(n - 1)">{{ n - 1 }}</option>
-              </select>
-              <div class="input-error-message" v-if="fieldErrors.scoreB">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ fieldErrors.scoreB }}</span>
-              </div>
+              <ModalSelect
+                v-model="scoreB"
+                :options="scoreOptions"
+                title="選擇 B 隊比數"
+                placeholder="B 隊比數"
+                :error="fieldErrors.scoreB"
+              />
             </div>
           </div>
         </div>

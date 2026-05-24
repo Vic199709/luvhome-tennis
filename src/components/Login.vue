@@ -17,10 +17,7 @@ const handleLogin = async () => {
   const trimPhone = phone.value.trim();
   let errors = [];
   
-  if (!trimPhone) {
-    errors.push('手機號碼欄位不能為空。');
-    phoneError.value = '此欄位必填。';
-  } else if (!/^09[0-9]{8}$/.test(trimPhone)) {
+  if (!/^09[0-9]{8}$/.test(trimPhone)) {
     errors.push('手機號碼格式不正確，應為 09 開頭的 10 碼數字。');
     phoneError.value = '格式不合規：09開頭共10碼數字。';
   }
@@ -84,7 +81,7 @@ const goToRegister = (e) => {
             id="login-phone" 
             v-model="phone"
             :class="['input-control', { 'input-error': phoneError }]"
-            placeholder="例如：0932028517" 
+            placeholder="請輸入手機號碼" 
             pattern="^09[0-9]{8}$" 
             inputmode="numeric" 
             required 
@@ -103,7 +100,7 @@ const goToRegister = (e) => {
         </div>
         
         <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-          <span>{{ isSubmitting ? '驗證中...' : '驗證並登入' }}</span>
+          <span>{{ isSubmitting ? '登入中...' : '登入' }}</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         </button>
 

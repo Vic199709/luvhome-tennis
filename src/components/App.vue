@@ -35,12 +35,6 @@ const handleErrHome = () => {
   store.currentView = 'view-login';
 };
 
-const handleToastRetry = (toast) => {
-  if (toast.retryCallback) {
-    toast.retryCallback();
-  }
-  removeToast(toast.id);
-};
 
 // Hash routing configuration
 const viewToHash = {
@@ -150,15 +144,6 @@ onMounted(async () => {
           <template v-else>ℹ️</template>
         </span>
         <span style="flex: 1;">{{ toast.message }}</span>
-        
-        <!-- Retry button for severe/error toasts -->
-        <button 
-          v-if="toast.retryCallback" 
-          @click="handleToastRetry(toast)" 
-          class="toast-btn-retry"
-        >
-          重試
-        </button>
       </div>
     </div>
 

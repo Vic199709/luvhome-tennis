@@ -53,16 +53,15 @@ export const store = reactive({
 });
 
 // Show lightweight toast notifications
-export function showToast(message, type = 'info', retryCallback = null) {
+export function showToast(message, type = 'info') {
   const id = Date.now() + Math.random().toString(36).substr(2, 9);
-  const toastObj = { id, message, type, retryCallback };
+  const toastObj = { id, message, type };
   store.toasts.push(toastObj);
   
-  if (!retryCallback) {
-    setTimeout(() => {
-      removeToast(id);
-    }, 4500);
-  }
+  setTimeout(() => {
+    removeToast(id);
+  }, 4500);
+  
   return id;
 }
 
