@@ -5,8 +5,14 @@ import ModalSelect from './ModalSelect.vue';
 
 const memberName = ref('');
 const memberPhone = ref('');
-const memberGender = ref('男');
+const memberGender = ref('不透漏');
+const genderOptions = [
+  { value: '不透漏', label: '不透漏' },
+  { value: '男', label: '男' },
+  { value: '女', label: '女' }
+];
 const checkedTeams = ref([]);
+const memberBirthday = ref('');
 
 const fieldErrors = ref({});
 const formErrors = ref([]);
@@ -19,11 +25,11 @@ const teamOptions = computed(() => {
 const handleRegisterSubmit = async () => {
   fieldErrors.value = {};
   formErrors.value = [];
-  
+
   await nextTick();
-  
+
   let errors = [];
-  
+
   // 1. Name verification
   const trimName = memberName.value.trim();
   if (!trimName) {
@@ -51,7 +57,7 @@ const handleRegisterSubmit = async () => {
   }
 
   isSubmitting.value = true;
-  
+
   // Format teams for payload
   const teamRecords = checkedTeams.value.map(tId => {
     const t = store.teams.find(teamObj => teamObj.$id.value === tId);
@@ -71,7 +77,8 @@ const handleRegisterSubmit = async () => {
     isVerified: { value: 'false' },
     isAdmin: { value: 'false' },
     currentScore: { value: '0' },
-    totalMatches: { value: '0' }
+    totalMatches: { value: '0' },
+    birthday: { value: memberBirthday.value }
   };
 
   try {
@@ -79,15 +86,16 @@ const handleRegisterSubmit = async () => {
 
     if (res.id) {
       showToast('註冊成功！帳號目前為【未驗證】狀態，請聯絡管理員核准。', 'success');
-      
+
       // Reset form
       memberName.value = '';
       memberPhone.value = '';
-      memberGender.value = '男';
+      memberGender.value = '不透漏';
+      memberBirthday.value = '';
       checkedTeams.value = [];
-      
+
       await refreshAllData();
-      
+
       if (!store.currentUser) {
         store.currentView = 'view-login';
       } else {
@@ -108,20 +116,27 @@ const handleRegisterSubmit = async () => {
 <template>
   <div class="content-area">
     <h2 class="section-title">
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="8.5" cy="7" r="4" />
+        <line x1="20" y1="8" x2="20" y2="14" />
+        <line x1="23" y1="11" x2="17" y2="11" />
+      </svg>
       新增聯盟會員
     </h2>
 
     <div class="card">
       <form id="add-member-form" @submit.prevent="handleRegisterSubmit" novalidate>
         <!-- Form-Level Error Banner -->
-        <div 
-          id="add-member-form-error" 
-          class="form-error-banner"
-          v-if="formErrors.length > 0"
-        >
+        <div id="add-member-form-error" class="form-error-banner" v-if="formErrors.length > 0">
           <div class="form-error-banner-title">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             <span>請修正以下表單錯誤：</span>
           </div>
           <ul class="form-error-banner-list">
@@ -132,17 +147,16 @@ const handleRegisterSubmit = async () => {
         <!-- Player Name -->
         <div class="form-group">
           <label for="member-name" class="form-label">會員姓名</label>
-          <input 
-            type="text" 
-            v-model="memberName" 
-            id="member-name" 
-            :class="['input-control', { 'input-error': fieldErrors.name }]"
-            placeholder="請輸入姓名" 
-            required 
-            :disabled="isSubmitting"
-          />
+          <input type="text" v-model="memberName" id="member-name"
+            :class="['input-control', { 'input-error': fieldErrors.name }]" placeholder="請輸入姓名" required
+            :disabled="isSubmitting" />
           <div class="input-error-message" v-if="fieldErrors.name">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             <span>{{ fieldErrors.name }}</span>
           </div>
         </div>
@@ -150,19 +164,16 @@ const handleRegisterSubmit = async () => {
         <!-- Player Phone -->
         <div class="form-group">
           <label for="member-phone" class="form-label">手機號碼</label>
-          <input 
-            type="tel" 
-            v-model="memberPhone" 
-            id="member-phone" 
-            :class="['input-control', { 'input-error': fieldErrors.phone }]"
-            placeholder="請輸入手機號碼" 
-            pattern="^09[0-9]{8}$" 
-            inputmode="numeric" 
-            required 
-            :disabled="isSubmitting"
-          />
+          <input type="tel" v-model="memberPhone" id="member-phone"
+            :class="['input-control', { 'input-error': fieldErrors.phone }]" placeholder="請輸入手機號碼"
+            pattern="^09[0-9]{8}$" inputmode="numeric" required :disabled="isSubmitting" />
           <div class="input-error-message" v-if="fieldErrors.phone">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             <span>{{ fieldErrors.phone }}</span>
           </div>
           <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">
@@ -173,34 +184,32 @@ const handleRegisterSubmit = async () => {
         <!-- Gender -->
         <div class="form-group">
           <label class="form-label">性別</label>
-          <div class="radio-group">
-            <label class="radio-label">
-              <input type="radio" v-model="memberGender" value="男" required :disabled="isSubmitting" />
-              <span>男</span>
-            </label>
-            <label class="radio-label">
-              <input type="radio" v-model="memberGender" value="女" required :disabled="isSubmitting" />
-              <span>女</span>
-            </label>
-          </div>
+          <ModalSelect v-model="memberGender" :options="genderOptions" title="選擇性別" placeholder="請選擇性別"
+            :disabled="isSubmitting" />
+        </div>
+
+        <!-- Birthday -->
+        <div class="form-group">
+          <label for="member-birthday" class="form-label">生日</label>
+          <input type="date" v-model="memberBirthday" id="member-birthday" class="input-control"
+            :disabled="isSubmitting" />
         </div>
 
         <!-- Multi-select Representative Teams -->
         <div class="form-group">
           <label class="form-label">代表球隊 (可多選)</label>
-          <ModalSelect
-            v-model="checkedTeams"
-            :options="teamOptions"
-            :multiple="true"
-            title="選擇代表球隊 (可多選)"
-            placeholder="請選擇代表球隊"
-            :disabled="isSubmitting"
-          />
+          <ModalSelect v-model="checkedTeams" :options="teamOptions" :multiple="true" title="選擇代表球隊 (可多選)"
+            placeholder="請選擇代表球隊" :disabled="isSubmitting" />
         </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top: 10px;" :disabled="isSubmitting">
           <span>{{ isSubmitting ? '處理中...' : '新增並提交審核' }}</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+          <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <polyline points="17 11 19 13 23 9" />
+          </svg>
         </button>
       </form>
     </div>

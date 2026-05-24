@@ -1,5 +1,21 @@
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
 import { store } from '../scripts/store';
+
+const isScrolled = ref(false);
+
+const handleScroll = () => {
+  isScrolled.value = window.scrollY > 0;
+};
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  handleScroll();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+});
 
 const handleLogout = () => {
   store.currentUser = null;
@@ -9,7 +25,7 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <header class="top-bar">
+  <header :class="['top-bar', { 'scrolled': isScrolled }]">
     <div class="top-bar-left">
       <span class="top-bar-logo">🎾</span>
       <div class="top-bar-titles">
@@ -20,7 +36,7 @@ const handleLogout = () => {
     <div class="top-bar-right">
       <button 
         type="button" 
-        v-if="store.currentUser" 
+        v-if="store.currentUser && !isScrolled" 
         @click="handleLogout" 
         class="btn-logout"
       >

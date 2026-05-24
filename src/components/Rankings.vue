@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { store, playerHasUnverifiedMatches } from '../scripts/store';
+import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
 const selectedTeamFilter = ref('all');
@@ -162,7 +163,7 @@ const getTeamMemberCount = (teamId) => {
             class="ranking-item"
           >
             <div class="ranking-badge">{{ idx + 1 }}</div>
-            <div class="ranking-avatar">{{ player.playerName.slice(0, 1) }}</div>
+            <div class="ranking-avatar" style="overflow: hidden;" v-html="multiavatar(player.playerName)"></div>
             <div class="ranking-details">
               <div class="ranking-name">
                 {{ player.playerName }}

@@ -118,7 +118,6 @@ onMounted(async () => {
     const foundUser = store.members.find(m => m.playerPhone.value === savedPhone);
     if (foundUser) {
       store.currentUser = foundUser;
-      showToast(`歡迎回來，${foundUser.playerName.value}！`, 'success');
     }
   }
 
