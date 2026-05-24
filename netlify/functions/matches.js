@@ -19,17 +19,34 @@ export async function handler(event, context) {
         return responseJson({ error: 'Missing required match details' }, 400);
       }
 
+      // Fetch settings from App 196
+      let settings = {};
+      try {
+        const settingsData = await kintoneFetch('settings', `/k/v1/records.json?app=196`);
+        (settingsData.records || []).forEach(record => {
+          const key = record.Key?.value;
+          const val = record.Value?.value;
+          if (key) {
+            settings[key] = val;
+          }
+        });
+      } catch (err) {
+        console.error('Failed to fetch settings from Kintone:', err);
+      }
+
       // Calculate score changes
       const isTeamAWon = parseInt(teamA_score, 10) > parseInt(teamB_score, 10);
-      let winScore = 10;
-      let loseScore = 3;
+      
+      // Load scores from settings with hardcoded fallbacks
+      let winScore = parseInt(settings.weekday_win_score || '10', 10);
+      let loseScore = parseInt(settings.weekday_lose_score || '3', 10);
 
       if (matchType === 'saturday') {
-        winScore = 15;
-        loseScore = 5;
+        winScore = parseInt(settings.challenge_win_score || '15', 10);
+        loseScore = parseInt(settings.challenge_lose_score || '5', 10);
       } else if (matchType === 'season') {
-        winScore = 30;
-        loseScore = 10;
+        winScore = parseInt(settings.finals_win_score || '30', 10);
+        loseScore = parseInt(settings.finals_lose_score || '10', 10);
       }
 
       // Prepare subtable formats for Kintone

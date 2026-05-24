@@ -3,12 +3,14 @@ import { handler as membersHandler } from './netlify/functions/members.js';
 import { handler as teamsHandler } from './netlify/functions/teams.js';
 import { handler as matchesHandler } from './netlify/functions/matches.js';
 import { handler as historyHandler } from './netlify/functions/history.js';
+import { handler as settingsHandler } from './netlify/functions/settings.js';
 
 const handlers = {
   members: membersHandler,
   teams: teamsHandler,
   matches: matchesHandler,
-  history: historyHandler
+  history: historyHandler,
+  settings: settingsHandler
 };
 
 const server = http.createServer(async (req, res) => {
@@ -29,7 +31,14 @@ const server = http.createServer(async (req, res) => {
     const parts = url.pathname.split('/');
     const funcName = parts[parts.length - 1] || parts[parts.length - 2];
     const cleanFuncName = funcName.replace('.js', '');
-    const handler = handlers[cleanFuncName];
+    
+    let handler;
+    try {
+      const module = await import(`./netlify/functions/${cleanFuncName}.js?t=${Date.now()}`);
+      handler = module.handler;
+    } catch (err) {
+      console.error(`Error dynamically importing function ${cleanFuncName}:`, err);
+    }
     
     if (handler) {
       let body = '';

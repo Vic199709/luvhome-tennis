@@ -30,7 +30,7 @@ const handleLogout = () => {
       <span class="top-bar-logo">🎾</span>
       <div class="top-bar-titles">
         <span class="top-bar-title">妝點家網球聯盟</span>
-        <span class="top-bar-subtitle">一起打球，一起進步</span>
+        <span class="top-bar-subtitle">{{ store.settings.top_bar_subtitle }}</span>
       </div>
     </div>
     <div class="top-bar-right">

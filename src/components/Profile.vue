@@ -412,9 +412,9 @@ const getPlayerNameAtRank = (rank) => {
         <div class="rules-container">
           <div class="rules-title">聯盟積分計算規則</div>
           <ul class="rules-list">
-            <li>平日積分：勝方 10 分，負方 3 分</li>
-            <li>週六 (挑戰日)：勝方 15 分，負方 5 分</li>
-            <li>季賽、年終賽：勝方 30 分，負方 10 分</li>
+            <li>平日積分：勝方 {{ store.settings.weekday_win_score }} 分，負方 {{ store.settings.weekday_lose_score }} 分</li>
+            <li>週六 (挑戰日)：勝方 {{ store.settings.challenge_win_score }} 分，負方 {{ store.settings.challenge_lose_score }} 分</li>
+            <li>季賽、年終賽：勝方 {{ store.settings.finals_win_score }} 分，負方 {{ store.settings.finals_lose_score }} 分</li>
             <li>其餘賽制積分另行公告</li>
           </ul>
         </div>

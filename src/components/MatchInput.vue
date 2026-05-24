@@ -340,9 +340,9 @@ const handleMatchSubmit = async () => {
           <div class="form-group" style="margin-bottom: 12px;">
             <label for="match-type" class="form-label">賽制類別</label>
             <select v-model="matchType" id="match-type" class="input-control">
-              <option value="weekday">平日 (勝10/負3)</option>
-              <option value="saturday">週六挑戰日 (勝15/負5)</option>
-              <option value="season">季賽/年終賽 (勝30/負10)</option>
+              <option value="weekday">平日 (勝{{ store.settings.weekday_win_score }}/負{{ store.settings.weekday_lose_score }})</option>
+              <option value="saturday">週六挑戰日 (勝{{ store.settings.challenge_win_score }}/負{{ store.settings.challenge_lose_score }})</option>
+              <option value="season">季賽/年終賽 (勝{{ store.settings.finals_win_score }}/負{{ store.settings.finals_lose_score }})</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom: 12px;">

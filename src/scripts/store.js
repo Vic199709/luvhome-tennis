@@ -11,7 +11,8 @@ export const API = {
   getTeams: () => fetch(`${API_BASE}/teams`).then(res => res.json()),
   getMatches: () => fetch(`${API_BASE}/matches`).then(res => res.json()),
   getHistory: () => fetch(`${API_BASE}/history`).then(res => res.json()),
-  
+  getSettings: () => fetch(`${API_BASE}/settings`).then(res => res.json()),
+
   addMember: (record) => fetch(`${API_BASE}/members`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -49,7 +50,16 @@ export const store = reactive({
   adminActiveTab: 'members',
   toasts: [],
   fullPageError: null,
-  isLoading: false
+  isLoading: false,
+  settings: {
+    weekday_win_score: '10',
+    weekday_lose_score: '3',
+    challenge_win_score: '15',
+    challenge_lose_score: '5',
+    finals_win_score: '30',
+    finals_lose_score: '10',
+    top_bar_subtitle: ''
+  }
 });
 
 // Show lightweight toast notifications
@@ -57,11 +67,11 @@ export function showToast(message, type = 'info') {
   const id = Date.now() + Math.random().toString(36).substr(2, 9);
   const toastObj = { id, message, type };
   store.toasts.push(toastObj);
-  
+
   setTimeout(() => {
     removeToast(id);
   }, 4500);
-  
+
   return id;
 }
 
@@ -83,13 +93,17 @@ export function clearFullPageError() {
 export async function refreshAllData() {
   try {
     store.isLoading = true;
-    const [members, teams, matches, history] = await Promise.all([
+    const [members, teams, matches, history, settings] = await Promise.all([
       API.getMembers(),
       API.getTeams(),
       API.getMatches(),
-      API.getHistory()
+      API.getHistory(),
+      API.getSettings().catch(err => {
+        console.error('Failed to load settings:', err);
+        return null;
+      })
     ]);
-    
+
     store.members = members || [];
     store.teams = (teams || []).sort((a, b) => {
       const idA = a.teamID?.value || '';
@@ -98,7 +112,10 @@ export async function refreshAllData() {
     });
     store.matches = matches || [];
     store.history = history || [];
-    
+    if (settings) {
+      store.settings = { ...store.settings, ...settings };
+    }
+
     // Sync current user session with updated records
     if (store.currentUser) {
       const updatedUser = store.members.find(m => m.$id.value === store.currentUser.$id.value);
@@ -108,7 +125,7 @@ export async function refreshAllData() {
     }
   } catch (error) {
     console.error('Failed to load data:', error);
-    
+
     if (store.members.length === 0) {
       showFullPageError(
         '資料庫連線失敗！ ⚡',
@@ -130,10 +147,10 @@ export async function refreshAllData() {
 export function playerHasUnverifiedMatches(playerId) {
   return store.matches.some(match => {
     if (match.isVerified.value === 'true') return false;
-    
+
     const teamAPlayers = match.teamA.value.map(row => row.value.playerID_A.value);
     const teamBPlayers = match.teamB.value.map(row => row.value.playerID_B.value);
-    
+
     return teamAPlayers.includes(playerId) || teamBPlayers.includes(playerId);
   });
 }
@@ -143,7 +160,7 @@ export function isValidTennisScore(scoreA, scoreB) {
   if (scoreA === scoreB) return false;
   const max = Math.max(scoreA, scoreB);
   const min = Math.min(scoreA, scoreB);
-  
+
   if (max === 6) {
     return min >= 0 && min <= 4;
   }
