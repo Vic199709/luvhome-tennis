@@ -1,11 +1,16 @@
 <script setup>
 import { ref, nextTick } from 'vue';
-import { store, refreshAllData, showToast } from '../scripts/store';
+import { store, refreshAllData, showToast, API } from '../scripts/store';
 
 const phone = ref('');
 const phoneError = ref('');
 const formErrors = ref([]);
 const isSubmitting = ref(false);
+
+const clearPhone = () => {
+  phone.value = '';
+  phoneError.value = '';
+};
 
 const handleLogin = async () => {
   // Clear errors first to allow re-triggering of animations
@@ -33,12 +38,10 @@ const handleLogin = async () => {
   
   isSubmitting.value = true;
   try {
-    await refreshAllData();
-    
-    const foundUser = store.members.find(m => m.playerPhone.value === trimPhone);
-    if (!foundUser) {
-      phoneError.value = '會員不存在。';
-      formErrors.value = ['找不到此手機號碼的會員，請先於下方「新增會員」註冊。'];
+    const res = await API.login(trimPhone);
+    if (!res.success) {
+      phoneError.value = res.error || '會員不存在。';
+      formErrors.value = [res.error || '找不到此手機號碼的會員，請先於下方「新增會員」註冊。'];
       nextTick(() => {
         const banner = document.getElementById('login-form-error');
         if (banner) banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -47,8 +50,12 @@ const handleLogin = async () => {
     }
     
     // Store user session
-    store.currentUser = foundUser;
+    store.currentUser = res.member;
     localStorage.setItem('tennis_player_phone', trimPhone);
+    
+    // Fetch all other required data
+    await refreshAllData();
+    
     store.currentView = 'view-profile';
   } catch (err) {
     console.error('Login failed:', err);
@@ -75,17 +82,32 @@ const goToRegister = (e) => {
         <!-- Phone Field -->
         <div class="form-group">
           <label for="login-phone" class="form-label">手機號碼</label>
-          <input 
-            type="tel" 
-            id="login-phone" 
-            v-model="phone"
-            :class="['input-control', { 'input-error': phoneError }]"
-            placeholder="請輸入手機號碼" 
-            pattern="^09[0-9]{8}$" 
-            inputmode="numeric" 
-            required 
-            :disabled="isSubmitting"
-          />
+          <div class="input-wrapper">
+            <input 
+              type="tel" 
+              id="login-phone" 
+              v-model="phone"
+              :class="['input-control', { 'input-error': phoneError }]"
+              placeholder="請輸入手機號碼" 
+              pattern="^09[0-9]{8}$" 
+              inputmode="numeric" 
+              required 
+              :disabled="isSubmitting"
+            />
+            <button 
+              v-if="phone" 
+              type="button" 
+              class="clear-btn" 
+              @click="clearPhone"
+              aria-label="清除輸入"
+              :disabled="isSubmitting"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
           
           <!-- Field-Level Inline Error Message -->
           <div class="input-error-message" v-if="phoneError">
@@ -112,3 +134,42 @@ const goToRegister = (e) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-wrapper .input-control {
+  padding-right: 44px;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 50%;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  z-index: 2;
+}
+
+.clear-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-dark);
+}
+
+.clear-btn:focus {
+  outline: none;
+  background-color: rgba(0, 0, 0, 0.08);
+}
+</style>

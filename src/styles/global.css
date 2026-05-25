@@ -1137,20 +1137,32 @@ body {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  margin: 20px 0;
+  margin: 0;
 }
 
 @media (max-width: 600px) {
   .profile-actions-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 6fr 4fr;
     gap: 14px;
+  }
+
+  .action-card-match {
+    grid-column: 1 / -1;
+  }
+
+  .action-card-ranking {
+    grid-column: 1;
+  }
+
+  .action-card-member {
+    grid-column: 2;
   }
 }
 
 .action-card {
   border-radius: 20px;
   padding: 20px;
-  height: 150px;
+  height: 132px;
   color: #ffffff;
   display: flex;
   flex-direction: column;
@@ -1161,6 +1173,12 @@ body {
   overflow: hidden;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+}
+
+@media (max-width: 600px) {
+  .action-card {
+    height: 120px;
+  }
 }
 
 .action-card:hover {
@@ -1264,5 +1282,3 @@ body {
   width: 16px !important;
   height: 16px !important;
 }
-
-

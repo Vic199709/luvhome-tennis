@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { store, playerHasUnverifiedMatches } from '../scripts/store';
+import { store, playerHasUnverifiedMatches, API } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
@@ -11,7 +11,7 @@ import ModalSelect from './ModalSelect.vue';
 const rankingTeamOptions = computed(() => {
   const options = [{ value: 'all', label: '所有球隊 (個人榜) / 整體球隊榜' }];
   store.teams.forEach(t => {
-    options.push({ value: t.teamID.value, label: t.teamName.value });
+    options.push({ value: t.teamID?.value || '', label: t.teamName?.value || '' });
   });
   return options;
 });
@@ -27,28 +27,27 @@ const playerTeamRankings = computed(() => {
   store.members.forEach(member => {
     const memberTeams = member.teams?.value || [];
     memberTeams.forEach(t => {
-      const teamId = t.value.teamID.value;
-      const teamName = t.value.teamName.value;
+      const teamId = t.value?.teamID?.value;
+      const teamName = t.value?.teamName?.value;
+      if (!teamId) return;
       
       const playerTeamHistories = store.history.filter(h => {
-        if (h.playerID.value !== member.$id.value || h.teamID.value !== teamId) return false;
-        const match = store.matches.find(m => m.$id.value === h.matchID.value);
-        return match && match.isVerified.value === 'true';
+        return h.playerID?.value === member.$id?.value && h.teamID?.value === teamId;
       });
       
       const score = playerTeamHistories.reduce((sum, h) => {
-        return sum + (parseInt(h.pointChange.value, 10) || 0);
+        return sum + (parseInt(h.pointChange?.value, 10) || 0);
       }, 0);
       
       const matchCount = playerTeamHistories.length;
       
       list.push({
-        playerID: member.$id.value,
-        playerName: member.playerName.value,
-        isVerified: member.isVerified.value,
-        playerPhone: member.playerPhone.value,
+        playerID: member.$id?.value || '',
+        playerName: member.playerName?.value || '',
+        isVerified: member.isVerified?.value || 'false',
+        playerPhone: member.playerPhone?.value || '',
         teamID: teamId,
-        teamName: teamName,
+        teamName: teamName || '',
         score: score,
         matchCount: matchCount
       });
@@ -73,7 +72,7 @@ const filteredRankings = computed(() => {
     } else {
       // Show list of all teams
       let list = [...store.teams];
-      return list.sort((a, b) => (parseInt(b.teamScore.value, 10) || 0) - (parseInt(a.teamScore.value, 10) || 0));
+      return list.sort((a, b) => (parseInt(b.teamScore?.value, 10) || 0) - (parseInt(a.teamScore?.value, 10) || 0));
     }
   }
 });
@@ -83,19 +82,88 @@ const isShowingTeamPlayers = computed(() => {
 });
 
 const getTeamNameStr = (teamId) => {
-  const team = store.teams.find(t => t.teamID?.value === teamId || t.$id.value === teamId);
-  return team ? team.teamName.value : '該球隊';
+  const team = store.teams.find(t => t.teamID?.value === teamId || t.$id?.value === teamId);
+  return team ? team.teamName?.value || '該球隊' : '該球隊';
 };
 
 const getTeamMemberCount = (teamId) => {
-  const teamRecord = store.teams.find(t => t.teamID?.value === teamId || t.$id.value === teamId);
-  const targetId = teamRecord ? teamRecord.teamID.value : teamId;
+  const teamRecord = store.teams.find(t => t.teamID?.value === teamId || t.$id?.value === teamId);
+  const targetId = teamRecord ? teamRecord.teamID?.value : teamId;
   return store.members.filter(m => 
-    (m.teams.value || []).some(t => t.value.teamID.value === targetId)
+    (m.teams?.value || []).some(t => t.value?.teamID?.value === targetId)
   ).length;
 };
 
+const loadAllDataIfNeeded = async () => {
+  if (currentTab.value === 'individual' && selectedTeamFilter.value === 'all') {
+    try {
+      store.isLoading = true;
+      const promises = [];
+      
+      if (!store.allMembersLoaded) {
+        promises.push(API.getMembers().then(res => {
+          store.members = res || [];
+          store.allMembersLoaded = true;
+        }));
+      }
+      if (!store.allHistoryLoaded) {
+        promises.push(API.getHistory().then(res => {
+          store.history = res || [];
+          store.allHistoryLoaded = true;
+        }));
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    } catch (err) {
+      console.error('Failed to load rankings all data:', err);
+    } finally {
+      store.isLoading = false;
+    }
+  }
+};
 
+watch(selectedTeamFilter, async (newTeamId) => {
+  if (newTeamId && newTeamId !== 'all') {
+    try {
+      store.isLoading = true;
+      const promises = [];
+      
+      // Check members
+      const hasMembers = store.members.some(m => 
+        (m.teams?.value || []).some(t => t.value?.teamID?.value === newTeamId)
+      );
+      if (!hasMembers && !store.allMembersLoaded) {
+        promises.push(API.getMembers({ teamID: newTeamId }).then(teamMembers => {
+          const existingIds = new Set(store.members.map(m => m.$id?.value));
+          const newMembers = (teamMembers || []).filter(m => !existingIds.has(m.$id?.value));
+          store.members = [...store.members, ...newMembers];
+        }));
+      }
+      
+      // Check history
+      const hasHistory = store.history.some(h => h.teamID?.value === newTeamId);
+      if (!hasHistory && !store.allHistoryLoaded) {
+        promises.push(API.getHistory({ teamID: newTeamId }).then(teamHistory => {
+          const existingIds = new Set(store.history.map(h => h.$id?.value));
+          const newHistory = (teamHistory || []).filter(h => !existingIds.has(h.$id?.value));
+          store.history = [...store.history, ...newHistory];
+        }));
+      }
+      
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    } catch (err) {
+      console.error('Failed to fetch team data for rankings:', err);
+    } finally {
+      store.isLoading = false;
+    }
+  }
+});
+
+watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true });
 </script>
 
 <template>

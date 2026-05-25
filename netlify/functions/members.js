@@ -7,9 +7,44 @@ export async function handler(event, context) {
 
   try {
     if (event.httpMethod === 'GET') {
-      const data = await kintoneFetch('members', `/k/v1/records.json?app=191`);
-      return responseJson(data.records);
-    } 
+      const qParams = event.queryStringParameters || {};
+      let query = '';
+      if (qParams.teamID) {
+        query = `teamID in ("${qParams.teamID}")`;
+      } else if (qParams.id) {
+        query = `$id = "${qParams.id}"`;
+      } else if (qParams.ids) {
+        const idList = qParams.ids.split(',').map(id => `"${id.trim()}"`).join(',');
+        query = `$id in (${idList})`;
+      } else if (qParams.isVerified) {
+        query = `isVerified in ("${qParams.isVerified}")`;
+      }
+
+      let url = `/k/v1/records.json?app=191`;
+      if (query) {
+        url += `&query=${encodeURIComponent(query)}`;
+      }
+
+      const data = await kintoneFetch('members', url);
+      const sanitizedRecords = (data.records || []).map(record => {
+        const sanitized = { ...record };
+        if (sanitized.playerPhone) {
+          const rawPhone = sanitized.playerPhone.value || '';
+          sanitized.playerPhone = {
+            ...sanitized.playerPhone,
+            value: rawPhone ? `******${rawPhone.slice(-4)}` : ''
+          };
+        }
+        if (sanitized.birthday) {
+          sanitized.birthday = {
+            ...sanitized.birthday,
+            value: ''
+          };
+        }
+        return sanitized;
+      });
+      return responseJson(sanitizedRecords);
+    }
     
     if (event.httpMethod === 'POST') {
       const body = JSON.parse(event.body || '{}');

@@ -6,36 +6,61 @@ const API_BASE = typeof window !== 'undefined' && isLocal && window.location.por
   ? 'http://localhost:8888/.netlify/functions'
   : '/.netlify/functions';
 
+const handleResponse = (res) => {
+  if (!res.ok) {
+    return res.json().then(err => {
+      throw new Error(err.error || `HTTP error ${res.status}`);
+    }).catch(() => {
+      throw new Error(`HTTP error ${res.status}`);
+    });
+  }
+  return res.json();
+};
+
 export const API = {
-  getMembers: () => fetch(`${API_BASE}/members`).then(res => res.json()),
-  getTeams: () => fetch(`${API_BASE}/teams`).then(res => res.json()),
-  getMatches: () => fetch(`${API_BASE}/matches`).then(res => res.json()),
-  getHistory: () => fetch(`${API_BASE}/history`).then(res => res.json()),
-  getSettings: () => fetch(`${API_BASE}/settings`).then(res => res.json()),
+  getMembers: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`${API_BASE}/members${query ? `?${query}` : ''}`).then(handleResponse);
+  },
+  getTeams: () => fetch(`${API_BASE}/teams`).then(handleResponse),
+  getMatches: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`${API_BASE}/matches${query ? `?${query}` : ''}`).then(handleResponse);
+  },
+  getHistory: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return fetch(`${API_BASE}/history${query ? `?${query}` : ''}`).then(handleResponse);
+  },
+  getSettings: () => fetch(`${API_BASE}/settings`).then(handleResponse),
+  login: (phone) => fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone })
+  }).then(handleResponse),
 
   addMember: (record) => fetch(`${API_BASE}/members`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ record })
-  }).then(res => res.json()),
+  }).then(handleResponse),
 
   verifyMember: (id) => fetch(`${API_BASE}/members`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id })
-  }).then(res => res.json()),
+  }).then(handleResponse),
 
   submitMatch: (data) => fetch(`${API_BASE}/matches`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  }).then(res => res.json()),
+  }).then(handleResponse),
 
   verifyMatch: (matchID) => fetch(`${API_BASE}/matches`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ matchID })
-  }).then(res => res.json())
+  }).then(handleResponse)
 };
 
 export const store = reactive({
@@ -46,6 +71,8 @@ export const store = reactive({
   matches: [],
   history: [],
   activeTeamId: null,
+  allMembersLoaded: false,
+  allHistoryLoaded: false,
   matchMode: 'doubles',
   adminActiveTab: 'members',
   toasts: [],
@@ -89,38 +116,118 @@ export function clearFullPageError() {
   store.fullPageError = null;
 }
 
-// Fetch all database records and cache them in store
-export async function refreshAllData() {
+export async function refreshAllData(options = {}) {
   try {
     store.isLoading = true;
-    const [members, teams, matches, history, settings] = await Promise.all([
-      API.getMembers(),
-      API.getTeams(),
-      API.getMatches(),
-      API.getHistory(),
-      API.getSettings().catch(err => {
-        console.error('Failed to load settings:', err);
-        return null;
-      })
-    ]);
+    const datasets = new Set(options.datasets || ['members', 'teams', 'matches', 'history', 'settings']);
 
-    store.members = members || [];
-    store.teams = (teams || []).sort((a, b) => {
-      const idA = a.teamID?.value || '';
-      const idB = b.teamID?.value || '';
-      return idA.localeCompare(idB);
-    });
-    store.matches = matches || [];
-    store.history = history || [];
-    if (settings) {
-      store.settings = { ...store.settings, ...settings };
+    // Determine which team's members to load on login/refresh
+    let teamID = options.teamID || store.activeTeamId;
+    if (!teamID && store.currentUser) {
+      const teams = (store.currentUser.teams?.value || []).filter(teamRow => teamRow && teamRow.value);
+      if (teams.length > 0) {
+        const sortedUserTeams = [...teams].sort((a, b) => {
+          const idA = a.value?.teamID?.value || '';
+          const idB = b.value?.teamID?.value || '';
+          return idA.localeCompare(idB);
+        });
+        teamID = sortedUserTeams[0].value?.teamID?.value;
+      }
+    }
+
+    const membersParams = {};
+    if (teamID) {
+      membersParams.teamID = teamID;
+    }
+
+    const matchesParams = {};
+    if (store.currentUser && store.currentUser.$id) {
+      matchesParams.playerID = store.currentUser.$id.value;
+    }
+
+    const historyParams = {};
+    if (teamID) {
+      historyParams.teamID = teamID;
+    }
+
+    const requests = [];
+    if (datasets.has('members')) requests.push(API.getMembers(membersParams).then(data => ({ key: 'members', data })));
+    if (datasets.has('teams')) requests.push(API.getTeams().then(data => ({ key: 'teams', data })));
+    if (datasets.has('matches')) requests.push(API.getMatches(matchesParams).then(data => ({ key: 'matches', data })));
+    if (datasets.has('history')) requests.push(API.getHistory(historyParams).then(data => ({ key: 'history', data })));
+    if (datasets.has('settings')) {
+      requests.push(
+        API.getSettings()
+          .then(data => ({ key: 'settings', data }))
+          .catch(err => {
+            console.error('Failed to load settings:', err);
+            return { key: 'settings', data: null };
+          })
+      );
+    }
+
+    const responses = await Promise.all(requests);
+    const loaded = Object.fromEntries(responses.map(item => [item.key, item.data]));
+
+    if (datasets.has('members')) {
+      store.members = loaded.members || [];
+    }
+    if (datasets.has('teams')) {
+      store.teams = (loaded.teams || []).sort((a, b) => {
+        const idA = a.teamID?.value || '';
+        const idB = b.teamID?.value || '';
+        return idA.localeCompare(idB);
+      });
+    }
+    if (datasets.has('matches')) {
+      store.matches = loaded.matches || [];
+    }
+    if (datasets.has('history')) {
+      store.history = loaded.history || [];
+    }
+    if (datasets.has('settings') && loaded.settings) {
+      store.settings = { ...store.settings, ...loaded.settings };
     }
 
     // Sync current user session with updated records
-    if (store.currentUser) {
-      const updatedUser = store.members.find(m => m.$id.value === store.currentUser.$id.value);
+    if (datasets.has('members') && store.currentUser && store.currentUser.$id) {
+      const updatedUser = store.members.find(m => m.$id?.value === store.currentUser.$id?.value);
       if (updatedUser) {
         store.currentUser = updatedUser;
+      }
+    }
+
+    // Fetch missing members for the latest match (so they display names correctly)
+    if (datasets.has('matches') && datasets.has('members') && store.currentUser && store.matches.length > 0) {
+      const uId = store.currentUser.$id?.value;
+      const userMatches = store.matches.filter(match => {
+        const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+        const teamBPlayers = (match.teamB?.value || []).map(row => row.value?.playerID_B?.value).filter(Boolean);
+        return teamAPlayers.includes(uId) || teamBPlayers.includes(uId);
+      });
+      const latestMatch = userMatches.sort((a, b) => {
+        const timeA = a.matchDateTime?.value ? new Date(a.matchDateTime.value).getTime() : 0;
+        const timeB = b.matchDateTime?.value ? new Date(b.matchDateTime.value).getTime() : 0;
+        return timeB - timeA;
+      })[0];
+
+      if (latestMatch) {
+        const playerIds = [
+          ...(latestMatch.teamA?.value || []).map(row => row.value?.playerID_A?.value),
+          ...(latestMatch.teamB?.value || []).map(row => row.value?.playerID_B?.value)
+        ].filter(Boolean);
+
+        const missingIds = playerIds.filter(id => !store.members.some(m => m.$id?.value === id));
+        if (missingIds.length > 0) {
+          try {
+            const missingMembers = await API.getMembers({ ids: missingIds.join(',') });
+            if (missingMembers && missingMembers.length > 0) {
+              store.members = [...store.members, ...missingMembers];
+            }
+          } catch (err) {
+            console.error('Failed to fetch missing members for latest match:', err);
+          }
+        }
       }
     }
   } catch (error) {
@@ -146,10 +253,10 @@ export async function refreshAllData() {
 // Check if a player has any unverified matches in their history
 export function playerHasUnverifiedMatches(playerId) {
   return store.matches.some(match => {
-    if (match.isVerified.value === 'true') return false;
+    if (match.isVerified?.value === 'true') return false;
 
-    const teamAPlayers = match.teamA.value.map(row => row.value.playerID_A.value);
-    const teamBPlayers = match.teamB.value.map(row => row.value.playerID_B.value);
+    const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+    const teamBPlayers = (match.teamB?.value || []).map(row => row.value?.playerID_B?.value).filter(Boolean);
 
     return teamAPlayers.includes(playerId) || teamBPlayers.includes(playerId);
   });

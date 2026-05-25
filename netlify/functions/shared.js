@@ -15,6 +15,13 @@ export async function kintoneFetch(appKey, path, options = {}) {
   if (!app) throw new Error(`Invalid app key: ${appKey}`);
 
   const url = `${KINTONE_DOMAIN}${path}`;
+  let readablePath = path;
+  try {
+    readablePath = decodeURIComponent(path);
+  } catch (_) {
+    readablePath = path;
+  }
+  console.log(`[Kintone API] ${readablePath}`);
   const headers = {
     'X-Cybozu-API-Token': COMBINED_TOKEN,
     ...options.headers

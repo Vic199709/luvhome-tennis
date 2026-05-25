@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue';
-import { store, refreshAllData, showToast, isValidTennisScore } from '../scripts/store';
+import { store, refreshAllData, showToast, isValidTennisScore, API } from '../scripts/store';
 
 const matchType = ref('weekday');
 const matchDateTimeLocal = ref('');
@@ -16,6 +16,19 @@ const setDefaultDateTime = () => {
   matchDateTimeLocal.value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 };
 setDefaultDateTime();
+
+// Watch date changes to set default match type (Saturday -> saturday, other days -> weekday)
+watch(matchDateTimeLocal, (newVal) => {
+  if (newVal) {
+    const date = new Date(newVal);
+    const day = date.getDay();
+    if (day === 6) {
+      matchType.value = 'saturday';
+    } else {
+      matchType.value = 'weekday';
+    }
+  }
+}, { immediate: true });
 
 // Player selections
 const playerA1 = ref('');
@@ -112,28 +125,52 @@ const initDefaultA1 = () => {
 };
 initDefaultA1();
 
+const loadTeamMembers = async (teamId) => {
+  if (!teamId) return;
+  const hasMembers = store.members.some(m => 
+    (m.teams?.value || []).some(t => t.value?.teamID?.value === teamId)
+  );
+  if (hasMembers || store.allMembersLoaded) return;
+
+  try {
+    store.isLoading = true;
+    const teamMembers = await API.getMembers({ teamID: teamId });
+    const existingIds = new Set(store.members.map(m => m.$id?.value));
+    const newMembers = (teamMembers || []).filter(m => !existingIds.has(m.$id?.value));
+    store.members = [...store.members, ...newMembers];
+  } catch (err) {
+    console.error('Failed to load team members:', err);
+  } finally {
+    store.isLoading = false;
+  }
+};
+
 // Watch teams to reset player if no longer valid under the selected team
-watch(teamA1, (newTeam) => {
+watch(teamA1, async (newTeam) => {
+  await loadTeamMembers(newTeam);
   const players = getPlayersForTeam(newTeam);
-  if (!players.some(p => p.$id.value === playerA1.value)) {
+  if (!players.some(p => p.$id?.value === playerA1.value)) {
     playerA1.value = '';
   }
 });
-watch(teamA2, (newTeam) => {
+watch(teamA2, async (newTeam) => {
+  await loadTeamMembers(newTeam);
   const players = getPlayersForTeam(newTeam);
-  if (!players.some(p => p.$id.value === playerA2.value)) {
+  if (!players.some(p => p.$id?.value === playerA2.value)) {
     playerA2.value = '';
   }
 });
-watch(teamB1, (newTeam) => {
+watch(teamB1, async (newTeam) => {
+  await loadTeamMembers(newTeam);
   const players = getPlayersForTeam(newTeam);
-  if (!players.some(p => p.$id.value === playerB1.value)) {
+  if (!players.some(p => p.$id?.value === playerB1.value)) {
     playerB1.value = '';
   }
 });
-watch(teamB2, (newTeam) => {
+watch(teamB2, async (newTeam) => {
+  await loadTeamMembers(newTeam);
   const players = getPlayersForTeam(newTeam);
-  if (!players.some(p => p.$id.value === playerB2.value)) {
+  if (!players.some(p => p.$id?.value === playerB2.value)) {
     playerB2.value = '';
   }
 });
@@ -246,25 +283,14 @@ const handleMatchSubmit = async () => {
   }
 
   try {
-    const res = await store.submitMatch ? store.submitMatch({
+    const res = await API.submitMatch({
       matchDateTime,
       teamA,
       teamB,
       teamA_score: sA,
       teamB_score: sB,
       matchType: matchType.value
-    }) : fetch('/.netlify/functions/matches', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        matchDateTime,
-        teamA,
-        teamB,
-        teamA_score: sA,
-        teamB_score: sB,
-        matchType: matchType.value
-      })
-    }).then(r => r.json());
+    });
 
     if (res.success) {
       showToast('比分紀錄已成功提交審核！', 'success');

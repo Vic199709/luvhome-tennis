@@ -34,6 +34,52 @@ const formatMatchDate = (dateStr) => {
   return `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 };
 
+import { onMounted } from 'vue';
+
+const loadAdminMembers = async () => {
+  try {
+    store.isLoading = true;
+    
+    // 1. Fetch unverified matches
+    const unverifiedMatches = await API.getMatches({ isVerified: 'false' });
+    const existingMatchIds = new Set(store.matches.map(m => m.$id?.value));
+    const newMatches = (unverifiedMatches || []).filter(m => !existingMatchIds.has(m.$id?.value));
+    store.matches = [...store.matches, ...newMatches];
+
+    // 2. Fetch unverified members
+    const unverified = await API.getMembers({ isVerified: 'false' });
+    const existingIds = new Set(store.members.map(m => m.$id?.value));
+    const newMembers = (unverified || []).filter(m => !existingIds.has(m.$id?.value));
+    store.members = [...store.members, ...newMembers];
+    
+    // 3. Fetch members involved in these unverified matches
+    const matchPlayerIds = [];
+    store.matches.forEach(match => {
+      if (match.isVerified?.value === 'false') {
+        const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+        const teamBPlayers = (match.teamB?.value || []).map(row => row.value?.playerID_B?.value).filter(Boolean);
+        matchPlayerIds.push(...teamAPlayers, ...teamBPlayers);
+      }
+    });
+    
+    const uniqueIds = [...new Set(matchPlayerIds)];
+    const missingIds = uniqueIds.filter(id => !store.members.some(m => m.$id?.value === id));
+    
+    if (missingIds.length > 0) {
+      const matchMembers = await API.getMembers({ ids: missingIds.join(',') });
+      const currentIds = new Set(store.members.map(m => m.$id?.value));
+      const filteredMatchMembers = (matchMembers || []).filter(m => !currentIds.has(m.$id?.value));
+      store.members = [...store.members, ...filteredMatchMembers];
+    }
+  } catch (err) {
+    console.error('Failed to load admin data:', err);
+  } finally {
+    store.isLoading = false;
+  }
+};
+
+onMounted(loadAdminMembers);
+
 // 3. Admin Actions
 const verifyingMemberId = ref(null);
 const approveMember = async (id) => {

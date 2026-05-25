@@ -7,8 +7,30 @@ export async function handler(event, context) {
 
   try {
     if (event.httpMethod === 'GET') {
-      const data = await kintoneFetch('matches', `/k/v1/records.json?app=194`);
-      return responseJson(data.records);
+      const qParams = event.queryStringParameters || {};
+      
+      let query = '';
+      if (qParams.playerID) {
+        query = `(playerID_A in ("${qParams.playerID}") or playerID_B in ("${qParams.playerID}"))`;
+        if (qParams.isVerified) {
+          query += ` and isVerified in ("${qParams.isVerified}")`;
+        }
+        query += ` order by matchDateTime desc limit 50`;
+        const data = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(query)}`);
+        return responseJson(data.records || []);
+      } else if (qParams.isVerified) {
+        query = `isVerified in ("${qParams.isVerified}")`;
+        if (qParams.isVerified === 'true') {
+          query += ` order by matchDateTime desc limit 50`;
+        }
+        const data = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(query)}`);
+        return responseJson(data.records || []);
+      } else {
+        const unverifiedData = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent('isVerified in ("false")')}`);
+        const verifiedData = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent('isVerified in ("true") order by matchDateTime desc limit 20')}`);
+        const combinedRecords = [...(unverifiedData.records || []), ...(verifiedData.records || [])];
+        return responseJson(combinedRecords);
+      }
     }
 
     if (event.httpMethod === 'POST') {

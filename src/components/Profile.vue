@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { store, playerHasUnverifiedMatches } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
@@ -7,10 +7,10 @@ const user = computed(() => store.currentUser);
 
 const userTeams = computed(() => {
   if (!user.value) return [];
-  const teams = user.value.teams?.value || [];
+  const teams = (user.value.teams?.value || []).filter(teamRow => teamRow && teamRow.value);
   return [...teams].sort((a, b) => {
-    const idA = a.value.teamID?.value || '';
-    const idB = b.value.teamID?.value || '';
+    const idA = a.value?.teamID?.value || '';
+    const idB = b.value?.teamID?.value || '';
     return idA.localeCompare(idB);
   });
 });
@@ -19,17 +19,14 @@ import ModalSelect from './ModalSelect.vue';
 
 const profileTeamOptions = computed(() => {
   return userTeams.value.map(t => ({
-    value: t.value.teamID.value,
-    label: t.value.teamName.value
+    value: t.value?.teamID?.value || '',
+    label: t.value?.teamName?.value || ''
   }));
 });
 
 // Watch and automatically set activeTeamId if not set
 const activeTeamId = computed({
   get() {
-    if (!store.activeTeamId && userTeams.value.length > 0) {
-      store.activeTeamId = userTeams.value[0].value.teamID.value;
-    }
     return store.activeTeamId;
   },
   set(val) {
@@ -37,27 +34,32 @@ const activeTeamId = computed({
   }
 });
 
+watch(userTeams, (newTeams) => {
+  if (!store.activeTeamId && newTeams.length > 0) {
+    store.activeTeamId = newTeams[0].value?.teamID?.value;
+  }
+}, { immediate: true });
+
 // 1. Stats Calculations
 const personalRank = computed(() => {
   if (!user.value || !activeTeamId.value) return '-';
-  const uId = user.value.$id.value;
+  const uId = user.value.$id?.value;
   const tId = activeTeamId.value;
 
   const list = [];
   store.members.forEach(member => {
     const memberTeams = member.teams?.value || [];
     memberTeams.forEach(t => {
-      const teamId = t.value.teamID.value;
+      const teamId = t.value?.teamID?.value;
+      if (!teamId) return;
       const playerTeamHistories = store.history.filter(h => {
-        if (h.playerID.value !== member.$id.value || h.teamID.value !== teamId) return false;
-        const match = store.matches.find(m => m.$id.value === h.matchID.value);
-        return match && match.isVerified.value === 'true';
+        return h.playerID?.value === member.$id?.value && h.teamID?.value === teamId;
       });
       const score = playerTeamHistories.reduce((sum, h) => {
-        return sum + (parseInt(h.pointChange.value, 10) || 0);
+        return sum + (parseInt(h.pointChange?.value, 10) || 0);
       }, 0);
       list.push({
-        playerID: member.$id.value,
+        playerID: member.$id?.value,
         teamID: teamId,
         score: score
       });
@@ -72,49 +74,71 @@ const personalRank = computed(() => {
 const teamRank = computed(() => {
   if (!activeTeamId.value) return '- / - 隊';
   const sortedTeams = [...store.teams].sort(
-    (a, b) => (parseInt(b.teamScore.value, 10) || 0) - (parseInt(a.teamScore.value, 10) || 0)
+    (a, b) => (parseInt(b.teamScore?.value, 10) || 0) - (parseInt(a.teamScore?.value, 10) || 0)
   );
   const rankIndex = sortedTeams.findIndex(t => t.teamID?.value === activeTeamId.value);
   return rankIndex !== -1 ? `${rankIndex + 1} / ${sortedTeams.length} 隊` : `- / ${sortedTeams.length} 隊`;
 });
 
 const hasPending = computed(() => {
-  if (!user.value) return false;
+  if (!user.value || !user.value.$id) return false;
   return playerHasUnverifiedMatches(user.value.$id.value);
 });
 
+const showVerificationHint = ref(false);
+const toggleVerificationHint = () => {
+  showVerificationHint.value = !showVerificationHint.value;
+  if (showVerificationHint.value) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+};
+
+const showRulesHint = ref(false);
+const toggleRulesHint = () => {
+  showRulesHint.value = !showRulesHint.value;
+  if (showRulesHint.value) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+};
+
 const displayScore = computed(() => {
   if (!user.value || !activeTeamId.value) return 0;
-  const uId = user.value.$id.value;
+  const uId = user.value.$id?.value;
   const tId = activeTeamId.value;
   const playerTeamHistories = store.history.filter(h => {
-    if (h.playerID.value !== uId || h.teamID.value !== tId) return false;
-    const match = store.matches.find(m => m.$id.value === h.matchID.value);
-    return match && match.isVerified.value === 'true';
+    return h.playerID?.value === uId && h.teamID?.value === tId;
   });
   return playerTeamHistories.reduce((sum, h) => {
-    return sum + (parseInt(h.pointChange.value, 10) || 0);
+    return sum + (parseInt(h.pointChange?.value, 10) || 0);
   }, 0);
 });
 
 // 2. Latest Match Calculations
 const userMatches = computed(() => {
-  if (!user.value) return [];
+  if (!user.value || !user.value.$id) return [];
   const uId = user.value.$id.value;
   return store.matches.filter(match => {
-    const teamAPlayers = match.teamA.value.map(row => row.value.playerID_A.value);
-    const teamBPlayers = match.teamB.value.map(row => row.value.playerID_B.value);
+    const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+    const teamBPlayers = (match.teamB?.value || []).map(row => row.value?.playerID_B?.value).filter(Boolean);
     return teamAPlayers.includes(uId) || teamBPlayers.includes(uId);
   });
 });
 
 const latestMatch = computed(() => {
   if (userMatches.value.length === 0) return null;
-  return [...userMatches.value].sort((a, b) => new Date(b.matchDateTime.value) - new Date(a.matchDateTime.value))[0];
+  return [...userMatches.value].sort((a, b) => {
+    const timeA = a.matchDateTime?.value ? new Date(a.matchDateTime.value).getTime() : 0;
+    const timeB = b.matchDateTime?.value ? new Date(b.matchDateTime.value).getTime() : 0;
+    return timeB - timeA;
+  })[0];
 });
 
 const latestMatchDate = computed(() => {
-  if (!latestMatch.value) return '-';
+  if (!latestMatch.value || !latestMatch.value.matchDateTime?.value) return '-';
   const dateObj = new Date(latestMatch.value.matchDateTime.value);
   return `${dateObj.getFullYear()}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}`;
 });
@@ -122,9 +146,10 @@ const latestMatchDate = computed(() => {
 const getPlayersNames = (subtable, playerField) => {
   if (!subtable || !subtable.value) return '-';
   return subtable.value.map(row => {
-    const pId = row.value[playerField].value;
-    const member = store.members.find(m => m.$id.value === pId);
-    return member ? member.playerName.value : '未知球員';
+    const pId = row.value?.[playerField]?.value;
+    if (!pId) return '未知球員';
+    const member = store.members.find(m => m.$id?.value === pId);
+    return member ? member.playerName?.value || '未知球員' : '未知球員';
   }).join(' / ');
 };
 
@@ -140,22 +165,23 @@ const playersBName = computed(() => {
 
 const latestMatchScoreStr = computed(() => {
   if (!latestMatch.value) return '- : -';
-  return `${latestMatch.value.teamA_score.value} : ${latestMatch.value.teamB_score.value}`;
+  return `${latestMatch.value.teamA_score?.value || '-'} : ${latestMatch.value.teamB_score?.value || '-'}`;
 });
 
 const latestMatchIsUnverified = computed(() => {
-  return latestMatch.value && latestMatch.value.isVerified.value === 'false';
+  return latestMatch.value && latestMatch.value.isVerified?.value === 'false';
 });
 
 const latestMatchPointsChange = computed(() => {
-  if (!latestMatch.value || !user.value) return { winPoints: '--', losePoints: '--', isWinBold: false, isLoseBold: false };
+  if (!latestMatch.value || !user.value || !user.value.$id) return { winPoints: '--', losePoints: '--', isWinBold: false, isLoseBold: false };
 
   const currentUserId = user.value.$id.value;
   const match = latestMatch.value;
 
-  const isA = match.teamA.value.map(row => row.value.playerID_A.value).includes(currentUserId);
-  const scoreA = parseInt(match.teamA_score.value, 10);
-  const scoreB = parseInt(match.teamB_score.value, 10);
+  const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+  const isA = teamAPlayers.includes(currentUserId);
+  const scoreA = parseInt(match.teamA_score?.value, 10) || 0;
+  const scoreB = parseInt(match.teamB_score?.value, 10) || 0;
   const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
 
   const winVal = match.winnerPoints?.value || '10';
@@ -171,22 +197,20 @@ const activeTeamRankings = computed(() => {
   const list = [];
   store.members.forEach(member => {
     const memberTeams = member.teams?.value || [];
-    const hasTeam = memberTeams.some(t => t.value.teamID.value === activeTeamId.value);
+    const hasTeam = memberTeams.some(t => t.value?.teamID?.value === activeTeamId.value);
     if (!hasTeam) return;
 
     const playerTeamHistories = store.history.filter(h => {
-      if (h.playerID.value !== member.$id.value || h.teamID.value !== activeTeamId.value) return false;
-      const match = store.matches.find(m => m.$id.value === h.matchID.value);
-      return match && match.isVerified.value === 'true';
+      return h.playerID?.value === member.$id?.value && h.teamID?.value === activeTeamId.value;
     });
 
     const score = playerTeamHistories.reduce((sum, h) => {
-      return sum + (parseInt(h.pointChange.value, 10) || 0);
+      return sum + (parseInt(h.pointChange?.value, 10) || 0);
     }, 0);
 
     list.push({
-      playerID: member.$id.value,
-      playerName: member.playerName.value,
+      playerID: member.$id?.value,
+      playerName: member.playerName?.value || '',
       score: score
     });
   });
@@ -195,12 +219,14 @@ const activeTeamRankings = computed(() => {
     if (b.score !== a.score) {
       return b.score - a.score;
     }
-    return a.playerID.localeCompare(b.playerID);
+    const idA = a.playerID || '';
+    const idB = b.playerID || '';
+    return idA.localeCompare(idB);
   });
 });
 
 const isUserAtRank = (rank) => {
-  if (!user.value) return false;
+  if (!user.value || !user.value.$id) return false;
   const playerAtRank = activeTeamRankings.value[rank - 1];
   return playerAtRank && playerAtRank.playerID === user.value.$id.value;
 };
@@ -217,13 +243,29 @@ const getPlayerNameAtRank = (rank) => {
     <div class="profile-card" v-if="user">
       <div class="profile-card-top">
         <div class="profile-avatar-container">
-          <div class="profile-avatar" style="overflow: hidden;" v-html="multiavatar(user.playerName.value)"></div>
-          <span :class="['badge', user.isVerified.value === 'true' ? 'badge-verified' : 'badge-unverified']">
-            {{ user.isVerified.value === 'true' ? '已驗證' : '未驗證' }}
-          </span>
+          <div class="profile-avatar" style="overflow: hidden;" v-html="multiavatar(user.playerName?.value || '')"></div>
+          <button
+            type="button"
+            :class="['badge', user.isVerified?.value === 'true' ? 'badge-verified' : 'badge-unverified']"
+            @click="toggleVerificationHint"
+            :aria-expanded="showVerificationHint"
+            aria-controls="verification-hint-dialog"
+          >
+            <svg v-if="user.isVerified?.value === 'true'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M8 12l2.5 2.5L16 9" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v6" />
+              <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
+            </svg>
+          </button>
         </div>
         <div class="profile-info">
-          <h2 class="profile-name">{{ user.playerName.value }}</h2>
+          <h2 class="profile-name">{{ user.playerName?.value }}</h2>
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <label style="font-size: 11px; opacity: 0.8;">所屬球隊</label>
             <ModalSelect v-model="activeTeamId" :options="profileTeamOptions" title="切換所屬球隊" placeholder="無球隊資訊"
@@ -231,6 +273,78 @@ const getPlayerNameAtRank = (rank) => {
           </div>
         </div>
       </div>
+      <!-- Teleported Verification Hint Modal -->
+      <Teleport to="body">
+        <Transition name="fade">
+          <div class="modal-select-backdrop" v-if="showVerificationHint" @click.self="toggleVerificationHint">
+            <div class="modal-select-sheet">
+              <!-- Sheet Handle Bar -->
+              <div class="sheet-handle"></div>
+
+              <!-- Sheet Header -->
+              <div class="sheet-header">
+                <h3 class="sheet-title">帳號驗證狀態說明</h3>
+                <button type="button" class="sheet-close" @click="toggleVerificationHint">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Sheet Content -->
+              <div class="sheet-body">
+                <div class="badge-explanation-container">
+                  <!-- Verified Badge Block -->
+                  <div class="badge-explanation-row">
+                    <div class="badge-exp-icon-col">
+                      <span class="badge badge-verified">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M8 12l2.5 2.5L16 9" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="badge-exp-content-col">
+                      <div class="badge-exp-title">已驗證帳號</div>
+                      <div class="badge-exp-desc">此帳號已通過聯盟的管理員認證，其比賽積分與排名皆為有效狀態。</div>
+                    </div>
+                  </div>
+
+                  <!-- Unverified Badge Block -->
+                  <div class="badge-explanation-row">
+                    <div class="badge-exp-icon-col">
+                      <span class="badge badge-unverified">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v6" />
+                          <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
+                        </svg>
+                      </span>
+                    </div>
+                    <div class="badge-exp-content-col">
+                      <div class="badge-exp-title">未驗證帳號</div>
+                      <div class="badge-exp-desc">此帳號尚未完成驗證。若為新加入球員，請聯絡管理員以完成驗證流程。</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sheet Footer -->
+              <div class="sheet-footer">
+                <button 
+                  type="button" 
+                  class="btn btn-secondary" 
+                  style="height: 52px; font-size: 18px; width: 100%; margin: 0;" 
+                  @click="toggleVerificationHint"
+                >
+                  關閉
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
 
       <div class="profile-stats-grid">
         <div class="profile-stat-box">
@@ -403,27 +517,270 @@ const getPlayerNameAtRank = (rank) => {
                   :style="{ fontWeight: latestMatchPointsChange.isLoseBold ? 'bold' : 'normal' }">
                   🔥 負方 <span>{{ latestMatchPointsChange.losePoints }}</span> 分
                 </span>
+                <button
+                  type="button"
+                  class="rules-help-btn"
+                  @click="toggleRulesHint"
+                  aria-label="查看積分規則"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="help-icon">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Rules block -->
-        <div class="rules-container">
-          <div class="rules-title">聯盟積分計算規則</div>
-          <ul class="rules-list">
-            <li>平日積分：勝方 {{ store.settings.weekday_win_score }} 分，負方 {{ store.settings.weekday_lose_score }} 分</li>
-            <li>週六 (挑戰日)：勝方 {{ store.settings.challenge_win_score }} 分，負方 {{ store.settings.challenge_lose_score }} 分</li>
-            <li>季賽、年終賽：勝方 {{ store.settings.finals_win_score }} 分，負方 {{ store.settings.finals_lose_score }} 分</li>
-            <li>其餘賽制積分另行公告</li>
-          </ul>
-        </div>
+      <!-- Teleported Rules Hint Modal -->
+      <Teleport to="body">
+        <Transition name="fade">
+          <div class="modal-select-backdrop" v-if="showRulesHint" @click.self="toggleRulesHint">
+            <div class="modal-select-sheet">
+              <!-- Sheet Handle Bar -->
+              <div class="sheet-handle"></div>
+
+              <!-- Sheet Header -->
+              <div class="sheet-header">
+                <h3 class="sheet-title">聯盟積分計算規則</h3>
+                <button type="button" class="sheet-close" @click="toggleRulesHint">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Sheet Content -->
+              <div class="sheet-body">
+                <div class="rules-explanation-container">
+                  <div class="rules-explanation-row">
+                    <div class="rules-exp-label">平日積分</div>
+                    <div class="rules-exp-detail">
+                      勝方 <span class="rule-score-win">+{{ store.settings.weekday_win_score }}</span> 分 / 
+                      負方 <span class="rule-score-lose">+{{ store.settings.weekday_lose_score }}</span> 分
+                    </div>
+                  </div>
+                  <div class="rules-explanation-row">
+                    <div class="rules-exp-label">週六 (挑戰日)</div>
+                    <div class="rules-exp-detail">
+                      勝方 <span class="rule-score-win">+{{ store.settings.challenge_win_score }}</span> 分 / 
+                      負方 <span class="rule-score-lose">+{{ store.settings.challenge_lose_score }}</span> 分
+                    </div>
+                  </div>
+                  <div class="rules-explanation-row">
+                    <div class="rules-exp-label">季賽、年終賽</div>
+                    <div class="rules-exp-detail">
+                      勝方 <span class="rule-score-win">+{{ store.settings.finals_win_score }}</span> 分 / 
+                      負方 <span class="rule-score-lose">+{{ store.settings.finals_lose_score }}</span> 分
+                    </div>
+                  </div>
+                  <div class="rules-explanation-row">
+                    <div class="rules-exp-label">其他規定</div>
+                    <div class="rules-exp-detail text-muted">
+                      其餘賽制積分另行公告。
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sheet Footer -->
+              <div class="sheet-footer">
+                <button 
+                  type="button" 
+                  class="btn btn-secondary" 
+                  style="height: 52px; font-size: 18px; width: 100%; margin: 0;" 
+                  @click="toggleRulesHint"
+                >
+                  關閉
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.badge {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  padding: 0;
+}
+
+.badge-verified {
+  background-color: #1d9bf0;
+  color: #ffffff;
+}
+
+.badge-unverified {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+
+.badge-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Verification Hint Modal Styles */
+.modal-select-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-select-sheet {
+  width: 100%;
+  max-width: 480px;
+  background-color: #FFFFFF;
+  border-top-left-radius: var(--border-radius-md);
+  border-top-right-radius: var(--border-radius-md);
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.sheet-handle {
+  width: 40px;
+  height: 5px;
+  background-color: #E5E7EB;
+  border-radius: 3px;
+  align-self: center;
+  margin-bottom: 12px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sheet-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.sheet-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast);
+}
+
+.sheet-close:hover {
+  background-color: #F3F4F6;
+}
+
+.sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding-right: 4px;
+}
+
+.sheet-footer {
+  padding-top: 10px;
+}
+
+.badge-explanation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.badge-explanation-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: var(--border-radius-sm);
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+}
+
+.badge-exp-icon-col {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.badge-exp-content-col {
+  flex: 1;
+}
+
+.badge-exp-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: 4px;
+}
+
+.badge-exp-desc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Animations */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-active .modal-select-sheet {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-leave-active .modal-select-sheet {
+  transition: transform 0.2s ease-in;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-from .modal-select-sheet {
+  transform: translateY(100%);
+}
+
+.fade-leave-to .modal-select-sheet {
+  transform: translateY(100%);
+}
+
 .top-eight-card {
   background-color: var(--color-bg-card);
   border-radius: var(--border-radius-md);
@@ -550,5 +907,74 @@ const getPlayerNameAtRank = (rank) => {
 .top-eight-player-name.active {
   color: var(--color-primary);
   font-weight: 700;
+}
+
+/* Rules Hint Modal & Button Styles */
+.rules-help-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.rules-help-btn:hover {
+  background-color: #F3F4F6;
+  color: var(--color-primary);
+}
+
+.help-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.rules-explanation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.rules-explanation-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: var(--border-radius-sm);
+  background-color: #F9FAFB;
+  border: 1px solid #E5E7EB;
+}
+
+.rules-exp-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+}
+
+.rules-exp-detail {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.rule-score-win {
+  color: var(--color-success);
+  font-weight: 800;
+}
+
+.rule-score-lose {
+  color: var(--color-danger);
+  font-weight: 800;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+  font-weight: normal;
 }
 </style>
