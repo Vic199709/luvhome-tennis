@@ -234,6 +234,35 @@ export async function handler(event, context) {
 
       const newMatchID = matchRecordRes.id;
 
+      // 2. Update period stats immediately on submission (apps 200, 201, 202)
+      // teamPoints: accumulates all players' pointChange per team
+      // teamResult: records isWin only ONCE per team (deduplicates doubles same-team case)
+      const teamPoints = new Map();
+      const teamResult = new Map();
+      for (const p of teamA) {
+        const pid = String(p.playerID);
+        const tid = String(p.teamID);
+        const change = isTeamAWon ? winScore : loseScore;
+        await upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID: pid, teamID: tid, pointChange: change, isWin: isTeamAWon });
+        await upsertPlayerYearStat({ seasonYear, playerID: pid, teamID: tid, pointChange: change, isWin: isTeamAWon });
+        teamPoints.set(tid, (teamPoints.get(tid) ?? 0) + change);
+        if (!teamResult.has(tid)) teamResult.set(tid, isTeamAWon);
+      }
+      for (const p of teamB) {
+        const pid = String(p.playerID);
+        const tid = String(p.teamID);
+        const change = isTeamAWon ? loseScore : winScore;
+        await upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID: pid, teamID: tid, pointChange: change, isWin: !isTeamAWon });
+        await upsertPlayerYearStat({ seasonYear, playerID: pid, teamID: tid, pointChange: change, isWin: !isTeamAWon });
+        teamPoints.set(tid, (teamPoints.get(tid) ?? 0) + change);
+        if (!teamResult.has(tid)) teamResult.set(tid, !isTeamAWon);
+      }
+      for (const [teamID, isWin] of teamResult.entries()) {
+        const pointChange = teamPoints.get(teamID);
+        await upsertTeamPeriodStat({ seasonYear, periodType: seasonQuarter, teamID, pointChange, isWin });
+        await upsertTeamPeriodStat({ seasonYear, periodType: 'year', teamID, pointChange, isWin });
+      }
+
       return responseJson({
         success: true,
         matchID: newMatchID
@@ -305,21 +334,12 @@ export async function handler(event, context) {
         })
       });
 
-      // 4. Update each player's score and matches in app 191
-      // We will perform updates sequentially to ensure accuracy
-      const teamTotals = new Map();
+      // 4. Update each player's score and matches in app 191, team score in app 192
       for (const history of scoreHistories) {
         const playerID = history.playerID.value;
         const teamID = history.teamID.value;
         const change = parseInt(history.pointChange.value, 10) || 0;
-        const isTeamAPlayer = teamAPlayerIds.has(playerID);
-        const isWin = isTeamAPlayer ? teamAWin : !teamAWin;
-        const teamAggregate = teamTotals.get(teamID) || { points: 0, isWin };
-        teamAggregate.points += change;
-        teamAggregate.isWin = isWin;
-        teamTotals.set(teamID, teamAggregate);
 
-        // Fetch current member record
         const memberQuery = await kintoneFetch('members', `/k/v1/records.json?app=191&query=$id = "${playerID}"`);
         if (memberQuery.records && memberQuery.records.length > 0) {
           const member = memberQuery.records[0];
@@ -339,7 +359,6 @@ export async function handler(event, context) {
           });
         }
 
-        // Fetch and update current team score in app 192
         const teamQuery = await kintoneFetch('teams', `/k/v1/records.json?app=192&query=$id = "${teamID}"`);
         if (teamQuery.records && teamQuery.records.length > 0) {
           const team = teamQuery.records[0];
@@ -356,39 +375,6 @@ export async function handler(event, context) {
             })
           });
         }
-
-        await upsertPlayerQuarterStat({
-          seasonYear,
-          seasonQuarter,
-          playerID,
-          teamID,
-          pointChange: change,
-          isWin
-        });
-        await upsertPlayerYearStat({
-          seasonYear,
-          playerID,
-          teamID,
-          pointChange: change,
-          isWin
-        });
-      }
-
-      for (const [teamID, aggregate] of teamTotals.entries()) {
-        await upsertTeamPeriodStat({
-          seasonYear,
-          periodType: seasonQuarter,
-          teamID,
-          pointChange: aggregate.points,
-          isWin: aggregate.isWin
-        });
-        await upsertTeamPeriodStat({
-          seasonYear,
-          periodType: 'year',
-          teamID,
-          pointChange: aggregate.points,
-          isWin: aggregate.isWin
-        });
       }
 
       return responseJson({ success: true, message: 'Match and member scores updated successfully' });

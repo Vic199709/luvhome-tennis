@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
-import { store } from '../scripts/store';
+import { store, resetUserSession } from '../scripts/store';
 
 const isScrolled = ref(false);
 
@@ -18,15 +18,20 @@ onUnmounted(() => {
 });
 
 const handleLogout = () => {
-  store.currentUser = null;
-  localStorage.removeItem('tennis_player_phone');
+  resetUserSession();
   store.currentView = 'view-login';
+};
+
+const handleGoHome = () => {
+  if (store.currentUser) {
+    store.currentView = 'view-profile';
+  }
 };
 </script>
 
 <template>
   <header :class="['top-bar', { 'scrolled': isScrolled }]">
-    <div class="top-bar-left">
+    <div class="top-bar-left" :class="{ 'clickable': store.currentUser }" @click="handleGoHome">
       <span class="top-bar-logo">🎾</span>
       <div class="top-bar-titles">
         <span class="top-bar-title">妝點家網球聯盟</span>
@@ -46,3 +51,9 @@ const handleLogout = () => {
     </div>
   </header>
 </template>
+
+<style scoped>
+.top-bar-left.clickable {
+  cursor: pointer;
+}
+</style>

@@ -68,7 +68,7 @@ const personalRank = computed(() => {
 
   list.sort((a, b) => b.score - a.score);
   const rankIndex = list.findIndex(item => item.playerID === uId && item.teamID === tId);
-  return rankIndex !== -1 ? `# ${rankIndex + 1}` : '# -';
+  return rankIndex !== -1 ? `${rankIndex + 1}` : '-';
 });
 
 const teamRank = computed(() => {
@@ -243,21 +243,19 @@ const getPlayerNameAtRank = (rank) => {
     <div class="profile-card" v-if="user">
       <div class="profile-card-top">
         <div class="profile-avatar-container">
-          <div class="profile-avatar" style="overflow: hidden;" v-html="multiavatar(user.playerName?.value || '')"></div>
-          <button
-            type="button"
+          <div class="profile-avatar" style="overflow: hidden;" v-html="multiavatar(user.playerName?.value || '')">
+          </div>
+          <button type="button"
             :class="['badge', user.isVerified?.value === 'true' ? 'badge-verified' : 'badge-unverified']"
-            @click="toggleVerificationHint"
-            :aria-expanded="showVerificationHint"
-            aria-controls="verification-hint-dialog"
-          >
+            @click="toggleVerificationHint" :aria-expanded="showVerificationHint"
+            aria-controls="verification-hint-dialog">
             <svg v-if="user.isVerified?.value === 'true'" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
               <circle cx="12" cy="12" r="9" />
               <path d="M8 12l2.5 2.5L16 9" />
             </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
-              stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" class="badge-icon">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v6" />
               <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
@@ -285,7 +283,8 @@ const getPlayerNameAtRank = (rank) => {
               <div class="sheet-header">
                 <h3 class="sheet-title">帳號驗證狀態說明</h3>
                 <button type="button" class="sheet-close" @click="toggleVerificationHint">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
@@ -299,7 +298,8 @@ const getPlayerNameAtRank = (rank) => {
                   <div class="badge-explanation-row">
                     <div class="badge-exp-icon-col">
                       <span class="badge badge-verified">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                          stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
                           <circle cx="12" cy="12" r="9" />
                           <path d="M8 12l2.5 2.5L16 9" />
                         </svg>
@@ -315,7 +315,8 @@ const getPlayerNameAtRank = (rank) => {
                   <div class="badge-explanation-row">
                     <div class="badge-exp-icon-col">
                       <span class="badge badge-unverified">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                          stroke-linecap="round" stroke-linejoin="round" class="badge-icon">
                           <circle cx="12" cy="12" r="9" />
                           <path d="M12 7v6" />
                           <circle cx="12" cy="17" r="1" fill="currentColor" stroke="none" />
@@ -332,12 +333,8 @@ const getPlayerNameAtRank = (rank) => {
 
               <!-- Sheet Footer -->
               <div class="sheet-footer">
-                <button 
-                  type="button" 
-                  class="btn btn-secondary" 
-                  style="height: 52px; font-size: 18px; width: 100%; margin: 0;" 
-                  @click="toggleVerificationHint"
-                >
+                <button type="button" class="btn btn-secondary"
+                  style="height: 52px; font-size: 18px; width: 100%; margin: 0;" @click="toggleVerificationHint">
                   關閉
                 </button>
               </div>
@@ -517,13 +514,9 @@ const getPlayerNameAtRank = (rank) => {
                   :style="{ fontWeight: latestMatchPointsChange.isLoseBold ? 'bold' : 'normal' }">
                   🔥 負方 <span>{{ latestMatchPointsChange.losePoints }}</span> 分
                 </span>
-                <button
-                  type="button"
-                  class="rules-help-btn"
-                  @click="toggleRulesHint"
-                  aria-label="查看積分規則"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="help-icon">
+                <button type="button" class="rules-help-btn" @click="toggleRulesHint" aria-label="查看積分規則">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="help-icon">
                     <circle cx="12" cy="12" r="10" />
                     <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -534,73 +527,70 @@ const getPlayerNameAtRank = (rank) => {
           </div>
         </div>
 
-      <!-- Teleported Rules Hint Modal -->
-      <Teleport to="body">
-        <Transition name="fade">
-          <div class="modal-select-backdrop" v-if="showRulesHint" @click.self="toggleRulesHint">
-            <div class="modal-select-sheet">
-              <!-- Sheet Handle Bar -->
-              <div class="sheet-handle"></div>
+        <!-- Teleported Rules Hint Modal -->
+        <Teleport to="body">
+          <Transition name="fade">
+            <div class="modal-select-backdrop" v-if="showRulesHint" @click.self="toggleRulesHint">
+              <div class="modal-select-sheet">
+                <!-- Sheet Handle Bar -->
+                <div class="sheet-handle"></div>
 
-              <!-- Sheet Header -->
-              <div class="sheet-header">
-                <h3 class="sheet-title">聯盟積分計算規則</h3>
-                <button type="button" class="sheet-close" @click="toggleRulesHint">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
+                <!-- Sheet Header -->
+                <div class="sheet-header">
+                  <h3 class="sheet-title">聯盟積分計算規則</h3>
+                  <button type="button" class="sheet-close" @click="toggleRulesHint">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
 
-              <!-- Sheet Content -->
-              <div class="sheet-body">
-                <div class="rules-explanation-container">
-                  <div class="rules-explanation-row">
-                    <div class="rules-exp-label">平日積分</div>
-                    <div class="rules-exp-detail">
-                      勝方 <span class="rule-score-win">+{{ store.settings.weekday_win_score }}</span> 分 / 
-                      負方 <span class="rule-score-lose">+{{ store.settings.weekday_lose_score }}</span> 分
+                <!-- Sheet Content -->
+                <div class="sheet-body">
+                  <div class="rules-explanation-container">
+                    <div class="rules-explanation-row">
+                      <div class="rules-exp-label">平日積分</div>
+                      <div class="rules-exp-detail">
+                        勝方 <span class="rule-score-win">+{{ store.settings.weekday_win_score }}</span> 分 /
+                        負方 <span class="rule-score-lose">+{{ store.settings.weekday_lose_score }}</span> 分
+                      </div>
                     </div>
-                  </div>
-                  <div class="rules-explanation-row">
-                    <div class="rules-exp-label">週六 (挑戰日)</div>
-                    <div class="rules-exp-detail">
-                      勝方 <span class="rule-score-win">+{{ store.settings.challenge_win_score }}</span> 分 / 
-                      負方 <span class="rule-score-lose">+{{ store.settings.challenge_lose_score }}</span> 分
+                    <div class="rules-explanation-row">
+                      <div class="rules-exp-label">週六 (挑戰日)</div>
+                      <div class="rules-exp-detail">
+                        勝方 <span class="rule-score-win">+{{ store.settings.challenge_win_score }}</span> 分 /
+                        負方 <span class="rule-score-lose">+{{ store.settings.challenge_lose_score }}</span> 分
+                      </div>
                     </div>
-                  </div>
-                  <div class="rules-explanation-row">
-                    <div class="rules-exp-label">季賽、年終賽</div>
-                    <div class="rules-exp-detail">
-                      勝方 <span class="rule-score-win">+{{ store.settings.finals_win_score }}</span> 分 / 
-                      負方 <span class="rule-score-lose">+{{ store.settings.finals_lose_score }}</span> 分
+                    <div class="rules-explanation-row">
+                      <div class="rules-exp-label">季賽、年終賽</div>
+                      <div class="rules-exp-detail">
+                        勝方 <span class="rule-score-win">+{{ store.settings.finals_win_score }}</span> 分 /
+                        負方 <span class="rule-score-lose">+{{ store.settings.finals_lose_score }}</span> 分
+                      </div>
                     </div>
-                  </div>
-                  <div class="rules-explanation-row">
-                    <div class="rules-exp-label">其他規定</div>
-                    <div class="rules-exp-detail text-muted">
-                      其餘賽制積分另行公告。
+                    <div class="rules-explanation-row">
+                      <div class="rules-exp-label">其他規定</div>
+                      <div class="rules-exp-detail text-muted">
+                        其餘賽制積分另行公告。
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Sheet Footer -->
-              <div class="sheet-footer">
-                <button 
-                  type="button" 
-                  class="btn btn-secondary" 
-                  style="height: 52px; font-size: 18px; width: 100%; margin: 0;" 
-                  @click="toggleRulesHint"
-                >
-                  關閉
-                </button>
+                <!-- Sheet Footer -->
+                <div class="sheet-footer">
+                  <button type="button" class="btn btn-secondary"
+                    style="height: 52px; font-size: 18px; width: 100%; margin: 0;" @click="toggleRulesHint">
+                    關閉
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </Transition>
-      </Teleport>
+          </Transition>
+        </Teleport>
       </div>
     </div>
   </div>

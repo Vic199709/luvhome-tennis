@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { store, refreshAllData, showToast, removeToast, API } from '../scripts/store';
+import { store, refreshAllData, resetUserSession, showToast, removeToast, API, loadSession } from '../scripts/store';
 
 // Import child views
 import Header from './Header.vue';
@@ -16,6 +16,15 @@ import SkeletonScreen from './SkeletonScreen.vue';
 const isInitializing = ref(true);
 const skeletonType = ref('login');
 
+const viewToSkeleton = {
+  'view-profile': 'profile',
+  'view-match': 'match',
+  'view-ranking': 'ranking',
+  'view-add-member': 'add-member',
+  'view-admin': 'admin',
+  'view-login': 'login',
+};
+
 // Toast formatting helper
 const getToastClass = (type) => {
   return `toast toast-${type} show`;
@@ -26,16 +35,13 @@ const handleErrBack = () => {
   if (store.fullPageError && store.fullPageError.backCallback) {
     store.fullPageError.backCallback();
   } else {
-    store.fullPageError = null;
-    store.currentUser = null;
+    resetUserSession();
     store.currentView = 'view-login';
   }
 };
 
 const handleErrHome = () => {
-  store.fullPageError = null;
-  store.currentUser = null;
-  localStorage.removeItem('tennis_player_phone');
+  resetUserSession();
   store.currentView = 'view-login';
 };
 
@@ -126,6 +132,7 @@ const syncRoute = async () => {
   
   // Load only the minimum required data for each view
   if (targetView !== 'view-login' && targetView !== 'view-error') {
+    skeletonType.value = viewToSkeleton[targetView] || 'generic';
     isInitializing.value = true;
     try {
       await ensureViewData(targetView);
@@ -158,15 +165,15 @@ if (typeof window !== 'undefined') {
 // Lifecycle: startup data synchronization and auto login
 onMounted(async () => {
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
-  if (hash === '#/ranking') skeletonType.value = 'ranking';
-  else if (hash === '#/match') skeletonType.value = 'match';
-  else if (hash === '#/admin') skeletonType.value = 'admin';
-  else if (hash === '#/add-member') skeletonType.value = 'add-member';
-  else if (hash === '#/login') skeletonType.value = 'login';
-  else skeletonType.value = localStorage.getItem('tennis_player_phone') ? 'profile' : 'login';
+  const initialView = hashToView[hash];
+  if (initialView) {
+    skeletonType.value = viewToSkeleton[initialView] || 'generic';
+  } else {
+    skeletonType.value = loadSession() ? 'profile' : 'login';
+  }
 
-  // Auto-login check
-  const savedPhone = typeof window !== 'undefined' ? localStorage.getItem('tennis_player_phone') : null;
+  // Auto-login check (session expires after 1 day)
+  const savedPhone = typeof window !== 'undefined' ? loadSession() : null;
   if (savedPhone) {
     isInitializing.value = true;
     try {

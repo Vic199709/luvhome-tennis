@@ -1,5 +1,13 @@
 import { kintoneFetch, responseJson, responseOptions } from './shared.js';
 
+function getSeasonInfo(matchDateTime) {
+  const date = new Date(matchDateTime);
+  if (Number.isNaN(date.getTime())) return { seasonYear: '', seasonQuarter: '' };
+  const seasonYear = String(date.getFullYear());
+  const quarter = Math.floor(date.getMonth() / 3) + 1;
+  return { seasonYear, seasonQuarter: `Q${quarter}` };
+}
+
 export async function handler(event, context) {
   if (event.httpMethod === 'OPTIONS') {
     return responseOptions();
@@ -36,8 +44,14 @@ export async function handler(event, context) {
         const teamAScore   = parseInt(match.teamA_score?.value,  10) || 0;
         const teamBScore   = parseInt(match.teamB_score?.value,  10) || 0;
         const teamAWon     = teamAScore > teamBScore;
-        const seasonYear   = match.seasonYear?.value   || '';
-        const seasonQuarter = match.seasonQuarter?.value || '';
+        let seasonYear    = match.seasonYear?.value    || '';
+        let seasonQuarter = match.seasonQuarter?.value || '';
+        // Older records may not have these fields — derive from matchDateTime
+        if (!seasonYear || !seasonQuarter) {
+          const derived = getSeasonInfo(match.matchDateTime?.value);
+          if (!seasonYear)    seasonYear    = derived.seasonYear;
+          if (!seasonQuarter) seasonQuarter = derived.seasonQuarter;
+        }
 
         // Team A
         (match.teamA?.value || []).forEach(row => {

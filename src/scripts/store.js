@@ -1,5 +1,36 @@
 import { reactive } from 'vue';
 
+// Session management (1-day expiry)
+const SESSION_KEY = 'tennis_session';
+const SESSION_TTL = 86400000; // 24 hours in ms
+
+export function saveSession(phone) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ phone, loginAt: Date.now() }));
+}
+
+export function loadSession() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const { phone, loginAt } = JSON.parse(raw);
+    if (Date.now() - loginAt > SESSION_TTL) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return phone;
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    return null;
+  }
+}
+
+export function clearSession() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(SESSION_KEY);
+}
+
 // API Endpoint Helpers
 const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const API_BASE = typeof window !== 'undefined' && isLocal && window.location.port !== '8888'
@@ -78,6 +109,8 @@ export const store = reactive({
   toasts: [],
   fullPageError: null,
   isLoading: false,
+  settingsLoaded: false,
+  teamsLoaded: false,
   settings: {
     weekday_win_score: '10',
     weekday_lose_score: '3',
@@ -116,10 +149,29 @@ export function clearFullPageError() {
   store.fullPageError = null;
 }
 
+export function resetUserSession() {
+  clearSession();
+  store.currentUser = null;
+  store.members = [];
+  store.teams = [];
+  store.matches = [];
+  store.history = [];
+  store.activeTeamId = null;
+  store.allMembersLoaded = false;
+  store.allHistoryLoaded = false;
+  store.settingsLoaded = false;
+  store.teamsLoaded = false;
+  store.fullPageError = null;
+}
+
 export async function refreshAllData(options = {}) {
   try {
     store.isLoading = true;
-    const datasets = new Set(options.datasets || ['members', 'teams', 'matches', 'history', 'settings']);
+    // Static tables (teams, settings) are fetched once per session
+    const defaultDatasets = ['members', 'matches', 'history'];
+    if (!store.teamsLoaded) defaultDatasets.push('teams');
+    if (!store.settingsLoaded) defaultDatasets.push('settings');
+    const datasets = new Set(options.datasets || defaultDatasets);
 
     // Determine which team's members to load on login/refresh
     let teamID = options.teamID || store.activeTeamId;
@@ -152,10 +204,10 @@ export async function refreshAllData(options = {}) {
 
     const requests = [];
     if (datasets.has('members')) requests.push(API.getMembers(membersParams).then(data => ({ key: 'members', data })));
-    if (datasets.has('teams')) requests.push(API.getTeams().then(data => ({ key: 'teams', data })));
+    if (datasets.has('teams') && !store.teamsLoaded) requests.push(API.getTeams().then(data => ({ key: 'teams', data })));
     if (datasets.has('matches')) requests.push(API.getMatches(matchesParams).then(data => ({ key: 'matches', data })));
     if (datasets.has('history')) requests.push(API.getHistory(historyParams).then(data => ({ key: 'history', data })));
-    if (datasets.has('settings')) {
+    if (datasets.has('settings') && !store.settingsLoaded) {
       requests.push(
         API.getSettings()
           .then(data => ({ key: 'settings', data }))
@@ -172,12 +224,13 @@ export async function refreshAllData(options = {}) {
     if (datasets.has('members')) {
       store.members = loaded.members || [];
     }
-    if (datasets.has('teams')) {
-      store.teams = (loaded.teams || []).sort((a, b) => {
+    if (datasets.has('teams') && loaded.teams) {
+      store.teams = loaded.teams.sort((a, b) => {
         const idA = a.teamID?.value || '';
         const idB = b.teamID?.value || '';
         return idA.localeCompare(idB);
       });
+      store.teamsLoaded = true;
     }
     if (datasets.has('matches')) {
       store.matches = loaded.matches || [];
@@ -187,6 +240,7 @@ export async function refreshAllData(options = {}) {
     }
     if (datasets.has('settings') && loaded.settings) {
       store.settings = { ...store.settings, ...loaded.settings };
+      store.settingsLoaded = true;
     }
 
     // Sync current user session with updated records

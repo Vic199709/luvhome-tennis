@@ -1,6 +1,6 @@
 <script setup>
 import { ref, nextTick } from 'vue';
-import { store, refreshAllData, showToast, API } from '../scripts/store';
+import { store, refreshAllData, showToast, API, saveSession } from '../scripts/store';
 
 const phone = ref('');
 const phoneError = ref('');
@@ -49,9 +49,9 @@ const handleLogin = async () => {
       return;
     }
     
-    // Store user session
+    // Store user session (expires in 1 day)
     store.currentUser = res.member;
-    localStorage.setItem('tennis_player_phone', trimPhone);
+    saveSession(trimPhone);
     
     // Fetch all other required data
     await refreshAllData();

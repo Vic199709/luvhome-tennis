@@ -5,7 +5,8 @@ import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
 const selectedTeamFilter = ref('all');
-const selectedPeriodFilter = ref('all');
+const selectedYearFilter = ref('all');
+const selectedQuarterFilter = ref('all');
 
 import ModalSelect from './ModalSelect.vue';
 
@@ -17,26 +18,43 @@ const rankingTeamOptions = computed(() => {
   return options;
 });
 
-const rankingPeriodOptions = computed(() => {
-  const options = [{ value: 'all', label: '全部期間' }];
-  const periodSet = new Set();
+const rankingYearOptions = computed(() => {
+  const options = [{ value: 'all', label: '全部年度' }];
+  const yearSet = new Set();
   store.history.forEach(h => {
     const year = h.seasonYear?.value;
-    const quarter = h.seasonQuarter?.value;
-    if (year && quarter) {
-      periodSet.add(`${year}-${quarter}`);
+    if (year) yearSet.add(year);
+  });
+  [...yearSet]
+    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))
+    .forEach(year => options.push({ value: year, label: `${year} 年` }));
+  return options;
+});
+
+const rankingQuarterOptions = computed(() => {
+  const options = [{ value: 'all', label: '全年度' }];
+  if (selectedYearFilter.value === 'all') return options;
+  const quarterSet = new Set();
+  store.history.forEach(h => {
+    if (h.seasonYear?.value === selectedYearFilter.value) {
+      const q = h.seasonQuarter?.value;
+      if (q) quarterSet.add(q);
     }
   });
-  const periods = [...periodSet].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
-  periods.forEach(period => {
-    options.push({ value: period, label: period });
-  });
+  [...quarterSet]
+    .sort()
+    .forEach(q => options.push({ value: q, label: q }));
   return options;
 });
 
 // Reset team filter when tab changes
 watch(currentTab, () => {
   selectedTeamFilter.value = 'all';
+});
+
+// Reset quarter when year changes
+watch(selectedYearFilter, () => {
+  selectedQuarterFilter.value = 'all';
 });
 
 // 1. Compute scores grouped by player + team combinations
@@ -70,9 +88,10 @@ const playerTeamRankings = computed(() => {
 const filteredRankings = computed(() => {
   const periodFilteredRankings = playerTeamRankings.value.map(item => {
     const histories = item.histories.filter(h => {
-      if (selectedPeriodFilter.value === 'all') return true;
-      const [year, quarter] = selectedPeriodFilter.value.split('-');
-      return h.seasonYear?.value === year && h.seasonQuarter?.value === quarter;
+      if (selectedYearFilter.value === 'all') return true;
+      if (h.seasonYear?.value !== selectedYearFilter.value) return false;
+      if (selectedQuarterFilter.value === 'all') return true;
+      return h.seasonQuarter?.value === selectedQuarterFilter.value;
     });
     const score = histories.reduce((sum, h) => sum + (parseInt(h.pointChange?.value, 10) || 0), 0);
     return {
@@ -205,7 +224,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
   <div class="content-area">
     <h2 class="section-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      ?舐???璁?    </h2>
+      聯盟排名榜    </h2>
 
     <!-- Individual / Team Toggle -->
     <div class="rankings-toggle">
@@ -214,14 +233,14 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
         @click="currentTab = 'individual'"
         :class="['rankings-toggle-btn', { active: currentTab === 'individual' }]"
       >
-        ?犖??
+        個人排名
       </button>
       <button 
         type="button" 
         @click="currentTab = 'team'"
         :class="['rankings-toggle-btn', { active: currentTab === 'team' }]"
       >
-        ????
+        球隊排名
       </button>
     </div>
 
@@ -229,24 +248,34 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
 
       <!-- Team Filter Dropdown -->
       <div class="filter-bar" style="margin-bottom: 16px;">
-        <label for="ranking-team-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">蝭拚??嚗?</label>
+        <label for="ranking-team-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">篩選球隊：</label>
         <ModalSelect
           v-model="selectedTeamFilter"
           :options="rankingTeamOptions"
-          title="蝭拚??"
-          placeholder="?豢???"
+          title="篩選球隊"
+          placeholder="選擇球隊"
           style="flex: 1;"
         />
       </div>
       <div class="filter-bar" style="margin-bottom: 16px;">
-        <label for="ranking-period-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">期間：</label>
-        <ModalSelect
-          v-model="selectedPeriodFilter"
-          :options="rankingPeriodOptions"
-          title="選擇期間"
-          placeholder="請選擇期間"
-          style="flex: 1;"
-        />
+        <label style="font-size: 15px; font-weight: 600; min-width: 80px;">期間：</label>
+        <div style="display: flex; gap: 8px; flex: 1;">
+          <ModalSelect
+            v-model="selectedYearFilter"
+            :options="rankingYearOptions"
+            title="選擇年度"
+            placeholder="年度"
+            style="flex: 1;"
+          />
+          <ModalSelect
+            v-model="selectedQuarterFilter"
+            :options="rankingQuarterOptions"
+            title="選擇季度"
+            placeholder="季度"
+            :disabled="selectedYearFilter === 'all'"
+            style="flex: 1;"
+          />
+        </div>
       </div>
 
       <div class="ranking-list">
@@ -255,7 +284,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
           v-if="isShowingTeamPlayers"
           style="font-weight: 700; margin-bottom: 8px; font-size: 14px; color: var(--color-primary);"
         >
-          {{ getTeamNameStr(selectedTeamFilter) }} ?璁?
+          {{ getTeamNameStr(selectedTeamFilter) }} 成員榜：
         </div>
   
         <!-- No items check -->
