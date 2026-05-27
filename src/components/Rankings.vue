@@ -1,17 +1,35 @@
-<script setup>
+﻿<script setup>
 import { ref, computed, watch } from 'vue';
 import { store, playerHasUnverifiedMatches, API } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
 const selectedTeamFilter = ref('all');
+const selectedPeriodFilter = ref('all');
 
 import ModalSelect from './ModalSelect.vue';
 
 const rankingTeamOptions = computed(() => {
-  const options = [{ value: 'all', label: '所有球隊 (個人榜) / 整體球隊榜' }];
+  const options = [{ value: 'all', label: '全部球隊（個人 / 團隊）' }];
   store.teams.forEach(t => {
     options.push({ value: t.teamID?.value || '', label: t.teamName?.value || '' });
+  });
+  return options;
+});
+
+const rankingPeriodOptions = computed(() => {
+  const options = [{ value: 'all', label: '全部期間' }];
+  const periodSet = new Set();
+  store.history.forEach(h => {
+    const year = h.seasonYear?.value;
+    const quarter = h.seasonQuarter?.value;
+    if (year && quarter) {
+      periodSet.add(`${year}-${quarter}`);
+    }
+  });
+  const periods = [...periodSet].sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+  periods.forEach(period => {
+    options.push({ value: period, label: period });
   });
   return options;
 });
@@ -34,13 +52,7 @@ const playerTeamRankings = computed(() => {
       const playerTeamHistories = store.history.filter(h => {
         return h.playerID?.value === member.$id?.value && h.teamID?.value === teamId;
       });
-      
-      const score = playerTeamHistories.reduce((sum, h) => {
-        return sum + (parseInt(h.pointChange?.value, 10) || 0);
-      }, 0);
-      
-      const matchCount = playerTeamHistories.length;
-      
+
       list.push({
         playerID: member.$id?.value || '',
         playerName: member.playerName?.value || '',
@@ -48,8 +60,7 @@ const playerTeamRankings = computed(() => {
         playerPhone: member.playerPhone?.value || '',
         teamID: teamId,
         teamName: teamName || '',
-        score: score,
-        matchCount: matchCount
+        histories: playerTeamHistories
       });
     });
   });
@@ -57,8 +68,22 @@ const playerTeamRankings = computed(() => {
 });
 
 const filteredRankings = computed(() => {
+  const periodFilteredRankings = playerTeamRankings.value.map(item => {
+    const histories = item.histories.filter(h => {
+      if (selectedPeriodFilter.value === 'all') return true;
+      const [year, quarter] = selectedPeriodFilter.value.split('-');
+      return h.seasonYear?.value === year && h.seasonQuarter?.value === quarter;
+    });
+    const score = histories.reduce((sum, h) => sum + (parseInt(h.pointChange?.value, 10) || 0), 0);
+    return {
+      ...item,
+      score,
+      matchCount: histories.length
+    };
+  });
+
   if (currentTab.value === 'individual') {
-    let list = [...playerTeamRankings.value];
+    let list = [...periodFilteredRankings];
     if (selectedTeamFilter.value !== 'all') {
       list = list.filter(item => item.teamID === selectedTeamFilter.value);
     }
@@ -67,11 +92,21 @@ const filteredRankings = computed(() => {
     // Team Rankings
     if (selectedTeamFilter.value !== 'all') {
       // If a specific team is filtered in Team tab, we show that team's players instead!
-      let list = playerTeamRankings.value.filter(item => item.teamID === selectedTeamFilter.value);
+      let list = periodFilteredRankings.filter(item => item.teamID === selectedTeamFilter.value);
       return list.sort((a, b) => b.score - a.score);
     } else {
-      // Show list of all teams
-      let list = [...store.teams];
+      const teamScores = new Map();
+      periodFilteredRankings.forEach(item => {
+        const current = teamScores.get(item.teamID) || {
+          $id: { value: item.teamID },
+          teamName: { value: item.teamName },
+          teamScore: { value: '0' }
+        };
+        const score = (parseInt(current.teamScore.value, 10) || 0) + item.score;
+        current.teamScore.value = String(score);
+        teamScores.set(item.teamID, current);
+      });
+      let list = [...teamScores.values()];
       return list.sort((a, b) => (parseInt(b.teamScore?.value, 10) || 0) - (parseInt(a.teamScore?.value, 10) || 0));
     }
   }
@@ -83,7 +118,7 @@ const isShowingTeamPlayers = computed(() => {
 
 const getTeamNameStr = (teamId) => {
   const team = store.teams.find(t => t.teamID?.value === teamId || t.$id?.value === teamId);
-  return team ? team.teamName?.value || '該球隊' : '該球隊';
+  return team ? (team.teamName?.value || '未知球隊') : '未知球隊';
 };
 
 const getTeamMemberCount = (teamId) => {
@@ -170,8 +205,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
   <div class="content-area">
     <h2 class="section-title">
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      聯盟排名榜
-    </h2>
+      ?舐???璁?    </h2>
 
     <!-- Individual / Team Toggle -->
     <div class="rankings-toggle">
@@ -180,14 +214,14 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
         @click="currentTab = 'individual'"
         :class="['rankings-toggle-btn', { active: currentTab === 'individual' }]"
       >
-        個人排名
+        ?犖??
       </button>
       <button 
         type="button" 
         @click="currentTab = 'team'"
         :class="['rankings-toggle-btn', { active: currentTab === 'team' }]"
       >
-        球隊排名
+        ????
       </button>
     </div>
 
@@ -195,24 +229,33 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
 
       <!-- Team Filter Dropdown -->
       <div class="filter-bar" style="margin-bottom: 16px;">
-        <label for="ranking-team-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">篩選球隊：</label>
+        <label for="ranking-team-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">蝭拚??嚗?</label>
         <ModalSelect
           v-model="selectedTeamFilter"
           :options="rankingTeamOptions"
-          title="篩選球隊"
-          placeholder="選擇球隊"
+          title="蝭拚??"
+          placeholder="?豢???"
           style="flex: 1;"
         />
       </div>
-  
-      <!-- Rankings List Container -->
+      <div class="filter-bar" style="margin-bottom: 16px;">
+        <label for="ranking-period-filter" style="font-size: 15px; font-weight: 600; min-width: 80px;">期間：</label>
+        <ModalSelect
+          v-model="selectedPeriodFilter"
+          :options="rankingPeriodOptions"
+          title="選擇期間"
+          placeholder="請選擇期間"
+          style="flex: 1;"
+        />
+      </div>
+
       <div class="ranking-list">
         <!-- Label if viewing team players -->
         <div 
           v-if="isShowingTeamPlayers"
           style="font-weight: 700; margin-bottom: 8px; font-size: 14px; color: var(--color-primary);"
         >
-          {{ getTeamNameStr(selectedTeamFilter) }} 成員榜：
+          {{ getTeamNameStr(selectedTeamFilter) }} ?璁?
         </div>
   
         <!-- No items check -->
@@ -220,7 +263,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
           v-if="filteredRankings.length === 0" 
           style="text-align: center; color: var(--color-text-muted); padding: 20px;"
         >
-          {{ currentTab === 'individual' ? '無符合條件的球員' : '無球隊數據' }}
+          {{ currentTab === 'individual' ? '目前沒有可顯示的個人排名' : '目前沒有可顯示的球隊排名' }}
         </div>
   
         <!-- Member/Player row -->
@@ -238,7 +281,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
                 <span 
                   v-if="player.isVerified === 'false'" 
                   class="asterisk-red" 
-                  title="待驗證會員"
+                  title="球員尚未完成驗證"
                 >*</span>
               </div>
               <div class="ranking-team">
@@ -251,10 +294,10 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
                 <span 
                   v-if="playerHasUnverifiedMatches(player.playerID)" 
                   class="asterisk-red" 
-                  title="包含待驗證積分"
+                  title="含有未驗證比賽"
                 >*</span>
               </div>
-              <div class="ranking-matches">{{ player.matchCount }} 場出賽</div>
+              <div class="ranking-matches">{{ player.matchCount }} 場比賽</div>
             </div>
           </div>
         </template>
@@ -267,17 +310,19 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
           class="ranking-item"
         >
           <div class="ranking-badge">{{ idx + 1 }}</div>
-          <div class="ranking-avatar" style="background-color: #FFF2E6; color: var(--color-accent-dark);">🛡️</div>
+          <div class="ranking-avatar" style="background-color: #FFF2E6; color: var(--color-accent-dark);">隊伍</div>
           <div class="ranking-details">
             <div class="ranking-name">{{ team.teamName.value }}</div>
             <div class="ranking-team">{{ getTeamMemberCount(team.$id.value) }} 位成員</div>
           </div>
           <div class="ranking-score-box">
             <div class="ranking-score">{{ parseInt(team.teamScore.value, 10) || 0 }} 分</div>
-            <div class="ranking-matches">團隊總積分</div>
+            <div class="ranking-matches">球隊總積分</div>
           </div>
         </div>
       </template>
     </div>
   </div>
 </template>
+
+
