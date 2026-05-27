@@ -1,5 +1,130 @@
 import { kintoneFetch, responseJson, responseOptions } from './shared.js';
 
+function getSeasonInfo(matchDateTime) {
+  const date = new Date(matchDateTime);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error('Invalid matchDateTime');
+  }
+  const seasonYear = String(date.getFullYear());
+  const quarter = Math.floor(date.getMonth() / 3) + 1;
+  return {
+    seasonYear,
+    seasonQuarter: `Q${quarter}`
+  };
+}
+
+async function upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID, teamID, pointChange, isWin }) {
+  const query = `seasonYear = "${seasonYear}" and seasonQuarter in ("${seasonQuarter}") and playerID = "${playerID}" and teamID = "${teamID}" limit 1`;
+  const existing = await kintoneFetch('playerQuarterStats', `/k/v1/records.json?app=200&query=${encodeURIComponent(query)}`);
+  const current = existing.records?.[0];
+  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
+  const currentWins = parseInt(current?.wins?.value, 10) || 0;
+  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
+  const nextRecord = {
+    seasonYear: { value: seasonYear },
+    seasonQuarter: { value: seasonQuarter },
+    playerID: { value: String(playerID) },
+    teamID: { value: String(teamID) },
+    periodPoints: { value: String(currentPoints + pointChange) },
+    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
+    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
+  };
+
+  if (current?.$id?.value) {
+    await kintoneFetch('playerQuarterStats', '/k/v1/record.json', {
+      method: 'PUT',
+      body: JSON.stringify({
+        app: 200,
+        id: current.$id.value,
+        record: nextRecord
+      })
+    });
+    return;
+  }
+
+  await kintoneFetch('playerQuarterStats', '/k/v1/record.json', {
+    method: 'POST',
+    body: JSON.stringify({
+      app: 200,
+      record: nextRecord
+    })
+  });
+}
+
+async function upsertPlayerYearStat({ seasonYear, playerID, teamID, pointChange, isWin }) {
+  const query = `seasonYear = "${seasonYear}" and playerID = "${playerID}" and teamID = "${teamID}" limit 1`;
+  const existing = await kintoneFetch('playerYearStats', `/k/v1/records.json?app=201&query=${encodeURIComponent(query)}`);
+  const current = existing.records?.[0];
+  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
+  const currentWins = parseInt(current?.wins?.value, 10) || 0;
+  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
+  const nextRecord = {
+    seasonYear: { value: seasonYear },
+    playerID: { value: String(playerID) },
+    teamID: { value: String(teamID) },
+    periodPoints: { value: String(currentPoints + pointChange) },
+    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
+    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
+  };
+
+  if (current?.$id?.value) {
+    await kintoneFetch('playerYearStats', '/k/v1/record.json', {
+      method: 'PUT',
+      body: JSON.stringify({
+        app: 201,
+        id: current.$id.value,
+        record: nextRecord
+      })
+    });
+    return;
+  }
+
+  await kintoneFetch('playerYearStats', '/k/v1/record.json', {
+    method: 'POST',
+    body: JSON.stringify({
+      app: 201,
+      record: nextRecord
+    })
+  });
+}
+
+async function upsertTeamPeriodStat({ seasonYear, periodType, teamID, pointChange, isWin }) {
+  const query = `seasonYear = "${seasonYear}" and period_type in ("${periodType}") and teamID = "${teamID}" limit 1`;
+  const existing = await kintoneFetch('teamPeriodStats', `/k/v1/records.json?app=202&query=${encodeURIComponent(query)}`);
+  const current = existing.records?.[0];
+  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
+  const currentWins = parseInt(current?.wins?.value, 10) || 0;
+  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
+  const nextRecord = {
+    seasonYear: { value: seasonYear },
+    period_type: { value: periodType },
+    teamID: { value: String(teamID) },
+    periodPoints: { value: String(currentPoints + pointChange) },
+    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
+    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
+  };
+
+  if (current?.$id?.value) {
+    await kintoneFetch('teamPeriodStats', '/k/v1/record.json', {
+      method: 'PUT',
+      body: JSON.stringify({
+        app: 202,
+        id: current.$id.value,
+        record: nextRecord
+      })
+    });
+    return;
+  }
+
+  await kintoneFetch('teamPeriodStats', '/k/v1/record.json', {
+    method: 'POST',
+    body: JSON.stringify({
+      app: 202,
+      record: nextRecord
+    })
+  });
+}
+
 export async function handler(event, context) {
   if (event.httpMethod === 'OPTIONS') {
     return responseOptions();
@@ -58,6 +183,7 @@ export async function handler(event, context) {
 
       // Calculate score changes
       const isTeamAWon = parseInt(teamA_score, 10) > parseInt(teamB_score, 10);
+      const { seasonYear, seasonQuarter } = getSeasonInfo(matchDateTime);
       
       // Load scores from settings with hardcoded fallbacks
       let winScore = parseInt(settings.weekday_win_score || '10', 10);
@@ -99,7 +225,9 @@ export async function handler(event, context) {
             teamB_score: { value: String(teamB_score) },
             isVerified: { value: 'false' },
             winnerPoints: { value: String(winScore) },
-            loserPoints: { value: String(loseScore) }
+            loserPoints: { value: String(loseScore) },
+            seasonYear: { value: seasonYear },
+            seasonQuarter: { value: seasonQuarter }
           }
         })
       });
@@ -115,7 +243,9 @@ export async function handler(event, context) {
           playerID: { value: String(p.playerID) },
           teamID: { value: String(p.teamID) },
           matchID: { value: String(newMatchID) },
-          pointChange: { value: String(isTeamAWon ? winScore : loseScore) }
+          pointChange: { value: String(isTeamAWon ? winScore : loseScore) },
+          seasonYear: { value: seasonYear },
+          seasonQuarter: { value: seasonQuarter }
         });
       });
 
@@ -125,7 +255,9 @@ export async function handler(event, context) {
           playerID: { value: String(p.playerID) },
           teamID: { value: String(p.teamID) },
           matchID: { value: String(newMatchID) },
-          pointChange: { value: String(isTeamAWon ? loseScore : winScore) }
+          pointChange: { value: String(isTeamAWon ? loseScore : winScore) },
+          seasonYear: { value: seasonYear },
+          seasonQuarter: { value: seasonQuarter }
         });
       });
 
@@ -163,6 +295,12 @@ export async function handler(event, context) {
       if (matchRecord.isVerified.value === 'true') {
         return responseJson({ message: 'Match already verified', success: true });
       }
+      const seasonYear = matchRecord.seasonYear?.value || getSeasonInfo(matchRecord.matchDateTime?.value).seasonYear;
+      const seasonQuarter = matchRecord.seasonQuarter?.value || getSeasonInfo(matchRecord.matchDateTime?.value).seasonQuarter;
+      const teamAScore = parseInt(matchRecord.teamA_score?.value, 10) || 0;
+      const teamBScore = parseInt(matchRecord.teamB_score?.value, 10) || 0;
+      const teamAWin = teamAScore > teamBScore;
+      const teamAPlayerIds = new Set((matchRecord.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean));
 
       // 2. Get Score History records for this match
       const historyQuery = await kintoneFetch('history', `/k/v1/records.json?app=195&query=matchID = "${matchID}"`);
@@ -182,10 +320,17 @@ export async function handler(event, context) {
 
       // 4. Update each player's score and matches in app 191
       // We will perform updates sequentially to ensure accuracy
+      const teamTotals = new Map();
       for (const history of scoreHistories) {
         const playerID = history.playerID.value;
         const teamID = history.teamID.value;
         const change = parseInt(history.pointChange.value, 10) || 0;
+        const isTeamAPlayer = teamAPlayerIds.has(playerID);
+        const isWin = isTeamAPlayer ? teamAWin : !teamAWin;
+        const teamAggregate = teamTotals.get(teamID) || { points: 0, isWin };
+        teamAggregate.points += change;
+        teamAggregate.isWin = isWin;
+        teamTotals.set(teamID, teamAggregate);
 
         // Fetch current member record
         const memberQuery = await kintoneFetch('members', `/k/v1/records.json?app=191&query=$id = "${playerID}"`);
@@ -224,6 +369,39 @@ export async function handler(event, context) {
             })
           });
         }
+
+        await upsertPlayerQuarterStat({
+          seasonYear,
+          seasonQuarter,
+          playerID,
+          teamID,
+          pointChange: change,
+          isWin
+        });
+        await upsertPlayerYearStat({
+          seasonYear,
+          playerID,
+          teamID,
+          pointChange: change,
+          isWin
+        });
+      }
+
+      for (const [teamID, aggregate] of teamTotals.entries()) {
+        await upsertTeamPeriodStat({
+          seasonYear,
+          periodType: seasonQuarter,
+          teamID,
+          pointChange: aggregate.points,
+          isWin: aggregate.isWin
+        });
+        await upsertTeamPeriodStat({
+          seasonYear,
+          periodType: 'year',
+          teamID,
+          pointChange: aggregate.points,
+          isWin: aggregate.isWin
+        });
       }
 
       return responseJson({ success: true, message: 'Match and member scores updated successfully' });
