@@ -4,7 +4,6 @@ export const APPS = {
   members: { id: 191, token: 'gArh68sHzKTy1iCJLyzS7BCLZD755YsBKqMybHx9' },
   teams: { id: 192, token: 'KZ7to3Y6k86SPEtmcioogRDCLvSiJnJ6wq2GUWLy' },
   matches: { id: 194, token: 'FlU0pWNI93li3GSWBXblHJsLp90OaQUtfNR2ozPt' },
-  history: { id: 195, token: 'aAv4kk2N2BJ2tsF8S9thzTAMGkfl90fHCwtg3Un7' },
   settings: { id: 196, token: 'rIQkeRxQQeX3zoIebjMivgc4ZZLC8H2fY2MlL13F' },
   playerQuarterStats: { id: 200, token: 'M1a9S5PXYAEs8h2bbNvjA4kn0qUtO6LxvYliNIJZ' },
   playerYearStats: { id: 201, token: 'LzOW8T9mSp9fmDRAi59KvS2fzGZXtHNfBJsuytLb' },

@@ -8,37 +8,77 @@ export async function handler(event, context) {
   try {
     if (event.httpMethod === 'GET') {
       const qParams = event.queryStringParameters || {};
-      
-      let historyQuery = '';
+
+      // Build query against app194 (matches) — only verified matches
+      const queryParts = ['isVerified in ("true")'];
+
+      if (qParams.playerID) {
+        queryParts.push(`(playerID_A in ("${qParams.playerID}") or playerID_B in ("${qParams.playerID}"))`);
+      }
       if (qParams.teamID) {
-        historyQuery = `teamID = "${qParams.teamID}"`;
-        if (qParams.playerID) {
-          historyQuery += ` and playerID = "${qParams.playerID}"`;
-        }
-      } else if (qParams.playerID) {
-        historyQuery = `playerID = "${qParams.playerID}"`;
+        queryParts.push(`(teamID_A in ("${qParams.teamID}") or teamID_B in ("${qParams.teamID}"))`);
       }
-      
-      const fullHistoryQuery = historyQuery ? `${historyQuery} limit 500` : 'limit 500';
-      const historyData = await kintoneFetch('history', `/k/v1/records.json?app=195&query=${encodeURIComponent(fullHistoryQuery)}`);
-      const records = historyData.records || [];
-      if (records.length === 0) {
+
+      const query = queryParts.join(' and ') + ' limit 500';
+      const matchesData = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(query)}`);
+      const matches = matchesData.records || [];
+
+      if (matches.length === 0) {
         return responseJson([]);
       }
 
-      // Find unique match IDs in these history records
-      const matchIds = [...new Set(records.map(h => h.matchID?.value))].filter(Boolean);
-      if (matchIds.length === 0) {
-        return responseJson([]);
-      }
+      // Flatten each match into per-player history records (same shape the frontend expects)
+      const historyRecords = [];
+      matches.forEach(match => {
+        const matchID = match.$id?.value;
+        const winnerPoints = parseInt(match.winnerPoints?.value, 10) || 0;
+        const loserPoints  = parseInt(match.loserPoints?.value,  10) || 0;
+        const teamAScore   = parseInt(match.teamA_score?.value,  10) || 0;
+        const teamBScore   = parseInt(match.teamB_score?.value,  10) || 0;
+        const teamAWon     = teamAScore > teamBScore;
+        const seasonYear   = match.seasonYear?.value   || '';
+        const seasonQuarter = match.seasonQuarter?.value || '';
 
-      // Query which of these matches are verified
-      const verifiedMatchesData = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(`$id in (${matchIds.map(id => `"${id}"`).join(',')}) and isVerified in ("true")`)}&fields=$id`);
-      const verifiedIds = new Set((verifiedMatchesData.records || []).map(m => m.$id.value));
+        // Team A
+        (match.teamA?.value || []).forEach(row => {
+          const playerID = row.value?.playerID_A?.value;
+          const teamID   = row.value?.teamID_A?.value;
+          if (!playerID || !teamID) return;
+          if (qParams.playerID && playerID !== qParams.playerID) return;
+          if (qParams.teamID   && teamID   !== qParams.teamID)   return;
 
-      // Filter history records for verified matches only
-      const filteredHistory = records.filter(h => verifiedIds.has(h.matchID?.value));
-      return responseJson(filteredHistory);
+          historyRecords.push({
+            $id:          { value: `${matchID}-A-${playerID}` },
+            playerID:     { value: playerID },
+            teamID:       { value: teamID },
+            matchID:      { value: matchID },
+            pointChange:  { value: String(teamAWon ? winnerPoints : loserPoints) },
+            seasonYear:   { value: seasonYear },
+            seasonQuarter:{ value: seasonQuarter }
+          });
+        });
+
+        // Team B
+        (match.teamB?.value || []).forEach(row => {
+          const playerID = row.value?.playerID_B?.value;
+          const teamID   = row.value?.teamID_B?.value;
+          if (!playerID || !teamID) return;
+          if (qParams.playerID && playerID !== qParams.playerID) return;
+          if (qParams.teamID   && teamID   !== qParams.teamID)   return;
+
+          historyRecords.push({
+            $id:          { value: `${matchID}-B-${playerID}` },
+            playerID:     { value: playerID },
+            teamID:       { value: teamID },
+            matchID:      { value: matchID },
+            pointChange:  { value: String(teamAWon ? loserPoints : winnerPoints) },
+            seasonYear:   { value: seasonYear },
+            seasonQuarter:{ value: seasonQuarter }
+          });
+        });
+      });
+
+      return responseJson(historyRecords);
     }
 
     return responseJson({ error: `Method ${event.httpMethod} not allowed` }, 405);

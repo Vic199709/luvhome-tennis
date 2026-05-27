@@ -234,45 +234,9 @@ export async function handler(event, context) {
 
       const newMatchID = matchRecordRes.id;
 
-      // 2. Create the Score History Records in App 195
-      const scoreHistoryRecords = [];
-
-      // Team A Players
-      teamA.forEach(p => {
-        scoreHistoryRecords.push({
-          playerID: { value: String(p.playerID) },
-          teamID: { value: String(p.teamID) },
-          matchID: { value: String(newMatchID) },
-          pointChange: { value: String(isTeamAWon ? winScore : loseScore) },
-          seasonYear: { value: seasonYear },
-          seasonQuarter: { value: seasonQuarter }
-        });
-      });
-
-      // Team B Players
-      teamB.forEach(p => {
-        scoreHistoryRecords.push({
-          playerID: { value: String(p.playerID) },
-          teamID: { value: String(p.teamID) },
-          matchID: { value: String(newMatchID) },
-          pointChange: { value: String(isTeamAWon ? loseScore : winScore) },
-          seasonYear: { value: seasonYear },
-          seasonQuarter: { value: seasonQuarter }
-        });
-      });
-
-      const scoreHistoryRes = await kintoneFetch('history', '/k/v1/records.json', {
-        method: 'POST',
-        body: JSON.stringify({
-          app: 195,
-          records: scoreHistoryRecords
-        })
-      });
-
       return responseJson({
         success: true,
-        matchID: newMatchID,
-        scoreHistoryIds: scoreHistoryRes.ids
+        matchID: newMatchID
       });
     }
 
@@ -301,10 +265,33 @@ export async function handler(event, context) {
       const teamBScore = parseInt(matchRecord.teamB_score?.value, 10) || 0;
       const teamAWin = teamAScore > teamBScore;
       const teamAPlayerIds = new Set((matchRecord.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean));
+      const winnerPoints = parseInt(matchRecord.winnerPoints?.value, 10) || 0;
+      const loserPoints  = parseInt(matchRecord.loserPoints?.value,  10) || 0;
 
-      // 2. Get Score History records for this match
-      const historyQuery = await kintoneFetch('history', `/k/v1/records.json?app=195&query=matchID = "${matchID}"`);
-      const scoreHistories = historyQuery.records || [];
+      // 2. Build score history from the match record itself (no separate app195 needed)
+      const scoreHistories = [];
+      (matchRecord.teamA?.value || []).forEach(row => {
+        const playerID = row.value?.playerID_A?.value;
+        const teamID   = row.value?.teamID_A?.value;
+        if (playerID && teamID) {
+          scoreHistories.push({
+            playerID:    { value: playerID },
+            teamID:      { value: teamID },
+            pointChange: { value: String(teamAWin ? winnerPoints : loserPoints) }
+          });
+        }
+      });
+      (matchRecord.teamB?.value || []).forEach(row => {
+        const playerID = row.value?.playerID_B?.value;
+        const teamID   = row.value?.teamID_B?.value;
+        if (playerID && teamID) {
+          scoreHistories.push({
+            playerID:    { value: playerID },
+            teamID:      { value: teamID },
+            pointChange: { value: String(teamAWin ? loserPoints : winnerPoints) }
+          });
+        }
+      });
 
       // 3. Mark match as verified in app 194
       await kintoneFetch('matches', '/k/v1/record.json', {
