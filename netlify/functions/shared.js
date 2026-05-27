@@ -23,7 +23,7 @@ export async function kintoneFetch(appKey, path, options = {}) {
   } catch (_) {
     readablePath = path;
   }
-  console.log(`[Kintone API] ${readablePath}`);
+  console.log(`[${new Date().toISOString()}] [Kintone API] ${readablePath}`);
   const headers = {
     'X-Cybozu-API-Token': COMBINED_TOKEN,
     ...options.headers

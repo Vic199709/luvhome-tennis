@@ -13,118 +13,6 @@ function getSeasonInfo(matchDateTime) {
   };
 }
 
-async function upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID, teamID, pointChange, isWin }) {
-  const query = `seasonYear = "${seasonYear}" and seasonQuarter in ("${seasonQuarter}") and playerID = "${playerID}" and teamID = "${teamID}" limit 1`;
-  const existing = await kintoneFetch('playerQuarterStats', `/k/v1/records.json?app=200&query=${encodeURIComponent(query)}`);
-  const current = existing.records?.[0];
-  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
-  const currentWins = parseInt(current?.wins?.value, 10) || 0;
-  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
-  const nextRecord = {
-    seasonYear: { value: seasonYear },
-    seasonQuarter: { value: seasonQuarter },
-    playerID: { value: String(playerID) },
-    teamID: { value: String(teamID) },
-    periodPoints: { value: String(currentPoints + pointChange) },
-    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
-    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
-  };
-
-  if (current?.$id?.value) {
-    await kintoneFetch('playerQuarterStats', '/k/v1/record.json', {
-      method: 'PUT',
-      body: JSON.stringify({
-        app: 200,
-        id: current.$id.value,
-        record: nextRecord
-      })
-    });
-    return;
-  }
-
-  await kintoneFetch('playerQuarterStats', '/k/v1/record.json', {
-    method: 'POST',
-    body: JSON.stringify({
-      app: 200,
-      record: nextRecord
-    })
-  });
-}
-
-async function upsertPlayerYearStat({ seasonYear, playerID, teamID, pointChange, isWin }) {
-  const query = `seasonYear = "${seasonYear}" and playerID = "${playerID}" and teamID = "${teamID}" limit 1`;
-  const existing = await kintoneFetch('playerYearStats', `/k/v1/records.json?app=201&query=${encodeURIComponent(query)}`);
-  const current = existing.records?.[0];
-  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
-  const currentWins = parseInt(current?.wins?.value, 10) || 0;
-  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
-  const nextRecord = {
-    seasonYear: { value: seasonYear },
-    playerID: { value: String(playerID) },
-    teamID: { value: String(teamID) },
-    periodPoints: { value: String(currentPoints + pointChange) },
-    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
-    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
-  };
-
-  if (current?.$id?.value) {
-    await kintoneFetch('playerYearStats', '/k/v1/record.json', {
-      method: 'PUT',
-      body: JSON.stringify({
-        app: 201,
-        id: current.$id.value,
-        record: nextRecord
-      })
-    });
-    return;
-  }
-
-  await kintoneFetch('playerYearStats', '/k/v1/record.json', {
-    method: 'POST',
-    body: JSON.stringify({
-      app: 201,
-      record: nextRecord
-    })
-  });
-}
-
-async function upsertTeamPeriodStat({ seasonYear, periodType, teamID, pointChange, isWin }) {
-  const query = `seasonYear = "${seasonYear}" and period_type in ("${periodType}") and teamID = "${teamID}" limit 1`;
-  const existing = await kintoneFetch('teamPeriodStats', `/k/v1/records.json?app=202&query=${encodeURIComponent(query)}`);
-  const current = existing.records?.[0];
-  const currentPoints = parseInt(current?.periodPoints?.value, 10) || 0;
-  const currentWins = parseInt(current?.wins?.value, 10) || 0;
-  const currentLosses = parseInt(current?.losses?.value, 10) || 0;
-  const nextRecord = {
-    seasonYear: { value: seasonYear },
-    period_type: { value: periodType },
-    teamID: { value: String(teamID) },
-    periodPoints: { value: String(currentPoints + pointChange) },
-    wins: { value: String(currentWins + (isWin ? 1 : 0)) },
-    losses: { value: String(currentLosses + (isWin ? 0 : 1)) }
-  };
-
-  if (current?.$id?.value) {
-    await kintoneFetch('teamPeriodStats', '/k/v1/record.json', {
-      method: 'PUT',
-      body: JSON.stringify({
-        app: 202,
-        id: current.$id.value,
-        record: nextRecord
-      })
-    });
-    return;
-  }
-
-  await kintoneFetch('teamPeriodStats', '/k/v1/record.json', {
-    method: 'POST',
-    body: JSON.stringify({
-      app: 202,
-      record: nextRecord
-    })
-  });
-}
-
 export async function handler(event, context) {
   if (event.httpMethod === 'OPTIONS') {
     return responseOptions();
@@ -133,7 +21,7 @@ export async function handler(event, context) {
   try {
     if (event.httpMethod === 'GET') {
       const qParams = event.queryStringParameters || {};
-      
+
       let query = '';
       if (qParams.playerID) {
         query = `(playerID_A in ("${qParams.playerID}") or playerID_B in ("${qParams.playerID}"))`;
@@ -181,10 +69,8 @@ export async function handler(event, context) {
         console.error('Failed to fetch settings from Kintone:', err);
       }
 
-      // Calculate score changes
-      const isTeamAWon = parseInt(teamA_score, 10) > parseInt(teamB_score, 10);
       const { seasonYear, seasonQuarter } = getSeasonInfo(matchDateTime);
-      
+
       // Load scores from settings with hardcoded fallbacks
       let winScore = parseInt(settings.weekday_win_score || '10', 10);
       let loseScore = parseInt(settings.weekday_lose_score || '3', 10);
@@ -234,35 +120,6 @@ export async function handler(event, context) {
 
       const newMatchID = matchRecordRes.id;
 
-      // 2. Update period stats immediately on submission (apps 200, 201, 202)
-      // teamPoints: accumulates all players' pointChange per team
-      // teamResult: records isWin only ONCE per team (deduplicates doubles same-team case)
-      const teamPoints = new Map();
-      const teamResult = new Map();
-      for (const p of teamA) {
-        const pid = String(p.playerID);
-        const tid = String(p.teamID);
-        const change = isTeamAWon ? winScore : loseScore;
-        await upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID: pid, teamID: tid, pointChange: change, isWin: isTeamAWon });
-        await upsertPlayerYearStat({ seasonYear, playerID: pid, teamID: tid, pointChange: change, isWin: isTeamAWon });
-        teamPoints.set(tid, (teamPoints.get(tid) ?? 0) + change);
-        if (!teamResult.has(tid)) teamResult.set(tid, isTeamAWon);
-      }
-      for (const p of teamB) {
-        const pid = String(p.playerID);
-        const tid = String(p.teamID);
-        const change = isTeamAWon ? loseScore : winScore;
-        await upsertPlayerQuarterStat({ seasonYear, seasonQuarter, playerID: pid, teamID: tid, pointChange: change, isWin: !isTeamAWon });
-        await upsertPlayerYearStat({ seasonYear, playerID: pid, teamID: tid, pointChange: change, isWin: !isTeamAWon });
-        teamPoints.set(tid, (teamPoints.get(tid) ?? 0) + change);
-        if (!teamResult.has(tid)) teamResult.set(tid, !isTeamAWon);
-      }
-      for (const [teamID, isWin] of teamResult.entries()) {
-        const pointChange = teamPoints.get(teamID);
-        await upsertTeamPeriodStat({ seasonYear, periodType: seasonQuarter, teamID, pointChange, isWin });
-        await upsertTeamPeriodStat({ seasonYear, periodType: 'year', teamID, pointChange, isWin });
-      }
-
       return responseJson({
         success: true,
         matchID: newMatchID
@@ -295,28 +152,28 @@ export async function handler(event, context) {
       const teamAWin = teamAScore > teamBScore;
       const teamAPlayerIds = new Set((matchRecord.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean));
       const winnerPoints = parseInt(matchRecord.winnerPoints?.value, 10) || 0;
-      const loserPoints  = parseInt(matchRecord.loserPoints?.value,  10) || 0;
+      const loserPoints = parseInt(matchRecord.loserPoints?.value, 10) || 0;
 
       // 2. Build score history from the match record itself (no separate app195 needed)
       const scoreHistories = [];
       (matchRecord.teamA?.value || []).forEach(row => {
         const playerID = row.value?.playerID_A?.value;
-        const teamID   = row.value?.teamID_A?.value;
+        const teamID = row.value?.teamID_A?.value;
         if (playerID && teamID) {
           scoreHistories.push({
-            playerID:    { value: playerID },
-            teamID:      { value: teamID },
+            playerID: { value: playerID },
+            teamID: { value: teamID },
             pointChange: { value: String(teamAWin ? winnerPoints : loserPoints) }
           });
         }
       });
       (matchRecord.teamB?.value || []).forEach(row => {
         const playerID = row.value?.playerID_B?.value;
-        const teamID   = row.value?.teamID_B?.value;
+        const teamID = row.value?.teamID_B?.value;
         if (playerID && teamID) {
           scoreHistories.push({
-            playerID:    { value: playerID },
-            teamID:      { value: teamID },
+            playerID: { value: playerID },
+            teamID: { value: teamID },
             pointChange: { value: String(teamAWin ? loserPoints : winnerPoints) }
           });
         }

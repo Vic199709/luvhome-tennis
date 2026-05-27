@@ -91,6 +91,12 @@ export const API = {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ matchID })
+  }).then(handleResponse),
+
+  adminAuth: (password) => fetch(`${API_BASE}/admin-auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password })
   }).then(handleResponse)
 };
 
