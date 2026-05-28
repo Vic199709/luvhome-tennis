@@ -2,6 +2,32 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { store, refreshAllData, showToast, API } from '../scripts/store';
 
+// Settings form — sync from DB values whenever settings finish loading
+const settingsForm = ref({ ...store.settings });
+watch(
+  () => store.settingsLoaded,
+  (loaded) => { if (loaded) settingsForm.value = { ...store.settings }; },
+  { immediate: true }
+);
+
+const isSavingSettings = ref(false);
+const saveSettings = async () => {
+  isSavingSettings.value = true;
+  try {
+    const res = await API.updateSettings(settingsForm.value);
+    if (res.success) {
+      Object.assign(store.settings, settingsForm.value);
+      showToast('設定已儲存', 'success');
+    } else {
+      showToast('儲存失敗: ' + (res.error || '未知錯誤'), 'error');
+    }
+  } catch (err) {
+    showToast('儲存異常，請重試', 'error');
+  } finally {
+    isSavingSettings.value = false;
+  }
+};
+
 // --- Admin password gate ---
 const ADMIN_SESSION_KEY = 'tennis_admin_auth';
 const ADMIN_SESSION_TTL = 86400000; // 1 day in ms
@@ -91,7 +117,7 @@ const formatMatchDate = (dateStr) => {
 const loadAdminMembers = async () => {
   try {
     store.isLoading = true;
-    
+
     // 1. Fetch unverified matches
     const unverifiedMatches = await API.getMatches({ isVerified: 'false' });
     const existingMatchIds = new Set(store.matches.map(m => m.$id?.value));
@@ -103,7 +129,7 @@ const loadAdminMembers = async () => {
     const existingIds = new Set(store.members.map(m => m.$id?.value));
     const newMembers = (unverified || []).filter(m => !existingIds.has(m.$id?.value));
     store.members = [...store.members, ...newMembers];
-    
+
     // 3. Fetch members involved in these unverified matches
     const matchPlayerIds = [];
     store.matches.forEach(match => {
@@ -113,10 +139,10 @@ const loadAdminMembers = async () => {
         matchPlayerIds.push(...teamAPlayers, ...teamBPlayers);
       }
     });
-    
+
     const uniqueIds = [...new Set(matchPlayerIds)];
     const missingIds = uniqueIds.filter(id => !store.members.some(m => m.$id?.value === id));
-    
+
     if (missingIds.length > 0) {
       const matchMembers = await API.getMembers({ ids: missingIds.join(',') });
       const currentIds = new Set(store.members.map(m => m.$id?.value));
@@ -137,6 +163,11 @@ onMounted(() => {
 // Load admin data once the password gate is passed
 watch(isAdminAuthed, (val) => {
   if (val) loadAdminMembers();
+});
+
+// Re-sync settings form whenever the settings tab is opened
+watch(activeTab, (tab) => {
+  if (tab === 'settings') settingsForm.value = { ...store.settings };
 });
 
 // 3. Admin Actions
@@ -193,24 +224,13 @@ const approveMatch = async (matchID) => {
           <div class="form-group">
             <label for="admin-password" class="form-label">管理員密碼</label>
             <div class="input-wrapper">
-              <input
-                type="password"
-                id="admin-password"
-                v-model="adminPassword"
-                :class="['input-control', { 'input-error': authError }]"
-                placeholder="請輸入管理員密碼"
-                autocomplete="current-password"
-                :disabled="isAuthLoading"
-              />
-              <button
-                v-if="adminPassword"
-                type="button"
-                class="clear-btn"
-                @click="adminPassword = ''; authError = ''"
-                aria-label="清除輸入"
-                :disabled="isAuthLoading"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <input type="password" id="admin-password" v-model="adminPassword"
+                :class="['input-control', { 'input-error': authError }]" placeholder="請輸入管理員密碼"
+                autocomplete="current-password" :disabled="isAuthLoading" />
+              <button v-if="adminPassword" type="button" class="clear-btn" @click="adminPassword = ''; authError = ''"
+                aria-label="清除輸入" :disabled="isAuthLoading">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -218,14 +238,24 @@ const approveMatch = async (matchID) => {
             </div>
 
             <div class="input-error-message" v-if="authError">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
               <span>{{ authError }}</span>
             </div>
           </div>
 
           <button type="submit" class="btn btn-primary" :disabled="isAuthLoading || !adminPassword">
             <span>{{ isAuthLoading ? '驗證中...' : '進入管理主控台' }}</span>
-            <svg v-if="!isAuthLoading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            <svg v-if="!isAuthLoading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
           </button>
         </form>
       </div>
@@ -233,107 +263,245 @@ const approveMatch = async (matchID) => {
 
     <!-- Admin Panel (shown after auth) -->
     <template v-else>
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-      <h2 class="section-title" style="margin-bottom: 0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        管理員審核主控台
-      </h2>
-      <button type="button" class="logout-btn" @click="logoutAdmin">
-        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        登出
-      </button>
-    </div>
-
-    <div class="card" style="padding: 16px;">
-      <!-- Admin Tabs -->
-      <div class="admin-tab-bar">
-        <button 
-          type="button" 
-          @click="activeTab = 'members'"
-          :class="['admin-tab-btn', { active: activeTab === 'members' }]"
-        >
-          待驗證會員
-        </button>
-        <button 
-          type="button" 
-          @click="activeTab = 'matches'"
-          :class="['admin-tab-btn', { active: activeTab === 'matches' }]"
-        >
-          待驗證比賽
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <h2 class="section-title" style="margin-bottom: 0;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          管理員審核主控台
+        </h2>
+        <button type="button" class="logout-btn" @click="logoutAdmin">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+          登出
         </button>
       </div>
 
-      <!-- Unverified Members List -->
-      <div v-show="activeTab === 'members'" class="admin-list">
-        <div 
-          v-if="unverifiedMembers.length === 0" 
-          style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;"
-        >
-          目前沒有待審核的會員
+      <div class="card" style="padding: 16px;">
+        <!-- Admin Tabs -->
+        <div class="admin-tab-bar">
+          <button type="button" @click="activeTab = 'members'"
+            :class="['admin-tab-btn', { active: activeTab === 'members' }]">
+            待驗證會員
+          </button>
+          <button type="button" @click="activeTab = 'matches'"
+            :class="['admin-tab-btn', { active: activeTab === 'matches' }]">
+            待驗證比賽
+          </button>
+          <button type="button" @click="activeTab = 'settings'"
+            :class="['admin-tab-btn', { active: activeTab === 'settings' }]">
+            積分設定
+          </button>
         </div>
-        
-        <div v-else>
-          <div 
-            v-for="m in unverifiedMembers" 
-            :key="m.$id.value" 
-            class="card admin-card"
-          >
-            <div class="admin-card-header">
-              <span class="admin-card-title">{{ m.playerName.value }} ({{ m.gender.value }})</span>
-              <span class="badge badge-unverified">待驗證</span>
-            </div>
-            <div class="admin-card-detail">手機：{{ m.playerPhone.value }}</div>
-            <div class="admin-card-detail">
-              代表隊伍：{{ (m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無' }}
-            </div>
-            <button 
-              type="button" 
-              class="btn btn-primary btn-sm" 
-              :disabled="verifyingMemberId === m.$id.value"
-              @click="approveMember(m.$id.value)"
-            >
-              {{ verifyingMemberId === m.$id.value ? '處理中...' : '核准驗證' }}
-            </button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Unverified Matches List -->
-      <div v-show="activeTab === 'matches'" class="admin-list">
-        <div 
-          v-if="unverifiedMatches.length === 0" 
-          style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;"
-        >
-          目前沒有待審核的比賽比分
-        </div>
-        
-        <div v-else>
-          <div 
-            v-for="match in unverifiedMatches" 
-            :key="match.$id.value" 
-            class="card admin-card"
-          >
-            <div class="admin-card-header">
-              <span class="admin-card-title">比賽比分審核 (ID: {{ match.$id.value }})</span>
-              <span class="badge badge-unverified">未入帳</span>
+        <!-- Unverified Members List -->
+        <div v-show="activeTab === 'members'" class="admin-list">
+          <div v-if="unverifiedMembers.length === 0"
+            style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;">
+            目前沒有待審核的會員
+          </div>
+
+          <div v-else>
+            <div v-for="m in unverifiedMembers" :key="m.$id.value" class="card admin-card">
+              <div class="admin-card-header">
+                <span class="admin-card-title">{{ m.playerName.value }} ({{ m.gender.value }})</span>
+                <span class="badge badge-unverified">待驗證</span>
+              </div>
+              <div class="admin-card-detail">手機：{{ m.playerPhone.value }}</div>
+              <div class="admin-card-detail">
+                代表隊伍：{{(m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無'}}
+              </div>
+              <button type="button" class="btn btn-primary btn-sm" :disabled="verifyingMemberId === m.$id.value"
+                @click="approveMember(m.$id.value)">
+                {{ verifyingMemberId === m.$id.value ? '處理中...' : '核准驗證' }}
+              </button>
             </div>
-            <div class="admin-card-detail">時間：{{ formatMatchDate(match.matchDateTime.value) }}</div>
-            <div class="admin-card-detail" style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin: 8px 0;">
-              {{ getPlayersNames(match.teamA, 'playerID_A') }} ({{ match.teamA_score.value }}) VS ({{ match.teamB_score.value }}) {{ getPlayersNames(match.teamB, 'playerID_B') }}
-            </div>
-            <button 
-              type="button" 
-              class="btn btn-accent btn-sm" 
-              style="color: white;"
-              :disabled="verifyingMatchId === match.$id.value"
-              @click="approveMatch(match.$id.value)"
-            >
-              {{ verifyingMatchId === match.$id.value ? '處理中...' : '核准過帳 (計算積分)' }}
-            </button>
           </div>
         </div>
+
+        <!-- Unverified Matches List -->
+        <div v-show="activeTab === 'matches'" class="admin-list">
+          <div v-if="unverifiedMatches.length === 0"
+            style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;">
+            目前沒有待審核的比賽比分
+          </div>
+
+          <div v-else>
+            <div v-for="match in unverifiedMatches" :key="match.$id.value" class="card admin-card">
+              <div class="admin-card-header">
+                <span class="admin-card-title">比賽比分審核 (ID: {{ match.$id.value }})</span>
+                <span class="badge badge-unverified">未入帳</span>
+              </div>
+              <div class="admin-card-detail">時間：{{ formatMatchDate(match.matchDateTime.value) }}</div>
+              <div class="admin-card-detail"
+                style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin: 8px 0;">
+                {{ getPlayersNames(match.teamA, 'playerID_A') }} ({{ match.teamA_score.value }}) VS ({{
+                  match.teamB_score.value }}) {{ getPlayersNames(match.teamB, 'playerID_B') }}
+              </div>
+              <button type="button" class="btn btn-accent btn-sm" style="color: white;"
+                :disabled="verifyingMatchId === match.$id.value" @click="approveMatch(match.$id.value)">
+                {{ verifyingMatchId === match.$id.value ? '處理中...' : '核准過帳 (計算積分)' }}
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Settings -->
+        <div v-show="activeTab === 'settings'" class="settings-panel">
+
+          <div class="settings-group">
+            <div class="settings-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="settings-group-icon">
+                <line x1="21" y1="10" x2="3" y2="10" />
+                <line x1="21" y1="6" x2="3" y2="6" />
+                <line x1="21" y1="14" x2="3" y2="14" />
+                <line x1="21" y1="18" x2="3" y2="18" />
+              </svg>
+              頂部顯示文字
+            </div>
+            <div class="settings-row settings-row-full">
+              <input type="text" class="settings-input settings-input-full" v-model="settingsForm.top_bar_subtitle"
+                placeholder="（空白則不顯示）" />
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="settings-group-icon">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              平日
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="settings-score-icon win">
+                  <path
+                    d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+                </svg>
+                勝方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input" v-model.number="settingsForm.weekday_win_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                  stroke-linejoin="round" class="settings-score-icon lose">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                負方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input" v-model.number="settingsForm.weekday_lose_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="settings-group-icon">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              週六（挑戰日）
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="settings-score-icon win">
+                  <path
+                    d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+                </svg>
+                勝方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input" v-model.number="settingsForm.challenge_win_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                  stroke-linejoin="round" class="settings-score-icon lose">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                負方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input"
+                  v-model.number="settingsForm.challenge_lose_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" class="settings-group-icon">
+                <circle cx="12" cy="8" r="6" />
+                <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
+              </svg>
+              季賽、年終賽
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="currentColor" class="settings-score-icon win">
+                  <path
+                    d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+                </svg>
+                勝方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input" v-model.number="settingsForm.finals_win_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+            <div class="settings-row">
+              <label class="settings-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                  stroke-linejoin="round" class="settings-score-icon lose">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" y1="9" x2="9" y2="15" />
+                  <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                負方
+              </label>
+              <div class="settings-input-row">
+                <input type="number" min="0" class="settings-input" v-model.number="settingsForm.finals_lose_score" />
+                <span class="settings-unit">分</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary" :disabled="isSavingSettings" @click="saveSettings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round" style="width:18px;height:18px">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <polyline points="17 21 17 13 7 13 7 21" />
+              <polyline points="7 3 7 8 15 8" />
+            </svg>
+            {{ isSavingSettings ? '儲存中...' : '儲存設定' }}
+          </button>
+
+        </div>
       </div>
-    </div>
     </template><!-- end v-else admin panel -->
   </div>
 </template>
@@ -395,5 +563,126 @@ const approveMatch = async (matchID) => {
   color: var(--color-danger);
   border-color: var(--color-danger);
   background-color: rgba(220, 38, 38, 0.05);
+}
+
+.admin-list>div {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Admin card — distinct from white parent */
+:deep(.admin-card) {
+  background-color: var(--color-bg-page);
+  box-shadow: none;
+}
+
+:deep(.admin-card):hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Settings panel */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.settings-group {
+  background-color: var(--color-bg-page);
+  border-radius: var(--border-radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  margin-bottom: 2px;
+}
+
+.settings-group-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-row-full {
+  justify-content: stretch;
+}
+
+.settings-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.settings-score-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.settings-score-icon.win {
+  color: var(--color-success);
+}
+
+.settings-score-icon.lose {
+  color: var(--color-danger);
+}
+
+.settings-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settings-input {
+  width: 72px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid rgba(29, 93, 58, 0.2);
+  border-radius: var(--border-radius-sm);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  background: var(--color-bg-card);
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.settings-input:focus {
+  border-color: var(--color-primary);
+}
+
+.settings-input-full {
+  width: 100%;
+  text-align: left;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.settings-unit {
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 </style>

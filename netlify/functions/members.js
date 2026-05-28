@@ -65,18 +65,21 @@ export async function handler(event, context) {
     if (event.httpMethod === 'PUT') {
       const body = JSON.parse(event.body || '{}');
       const { id, record } = body;
-      if (!id || !record) {
-        return responseJson({ error: 'Missing id or record in request body' }, 400);
+      if (!id) {
+        return responseJson({ error: 'Missing id in request body' }, 400);
       }
+      // Default to verifying the member if no record is provided
+      const updateRecord = record || { isVerified: { value: 'true' } };
       const data = await kintoneFetch('members', '/k/v1/record.json', {
         method: 'PUT',
         body: JSON.stringify({
           app: 191,
           id,
-          record
+          record: updateRecord
         })
       });
-      return responseJson(data);
+      // Include id in response so callers can confirm which record was updated
+      return responseJson({ id, ...data });
     }
 
     return responseJson({ error: `Method ${event.httpMethod} not allowed` }, 405);

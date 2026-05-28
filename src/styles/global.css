@@ -94,6 +94,8 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
   transition: gap var(--transition-fast);
 }
 
@@ -120,6 +122,8 @@ body {
 .top-bar-titles {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   transition: all var(--transition-fast);
 }
 
@@ -160,22 +164,21 @@ body {
 }
 
 .btn-logout {
-  background: rgba(255, 255, 255, 0.15);
+  background: none;
   border: none;
   color: var(--color-text-light);
-  padding: 6px 12px;
-  border-radius: var(--border-radius-sm);
-  font-size: 12px;
-  font-weight: 600;
+  padding: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: background var(--transition-fast);
+  opacity: 0.75;
+  flex-shrink: 0;
+  margin-left: 12px;
+  transition: opacity var(--transition-fast);
 }
 
 .btn-logout:hover {
-  background: rgba(255, 255, 255, 0.25);
+  opacity: 1;
 }
 
 /* Bottom Navigation Bar */

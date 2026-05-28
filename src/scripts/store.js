@@ -78,7 +78,7 @@ export const API = {
   verifyMember: (id) => fetch(`${API_BASE}/members`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id })
+    body: JSON.stringify({ id, record: { isVerified: { value: 'true' } } })
   }).then(handleResponse),
 
   submitMatch: (data) => fetch(`${API_BASE}/matches`, {
@@ -91,6 +91,12 @@ export const API = {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ matchID })
+  }).then(handleResponse),
+
+  updateSettings: (updates) => fetch(`${API_BASE}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ updates })
   }).then(handleResponse),
 
   adminAuth: (password) => fetch(`${API_BASE}/admin-auth`, {
