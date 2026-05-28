@@ -25,7 +25,7 @@ export async function kintoneFetch(appKey, path, options = {}) {
   }
   console.log(`[Kintone API] ${readablePath}`);
   const headers = {
-    'X-Cybozu-API-Token': app.token,
+    'X-Cybozu-API-Token': COMBINED_TOKEN,
     ...options.headers
   };
 
