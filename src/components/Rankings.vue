@@ -5,8 +5,8 @@ import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
 const selectedTeamFilter = ref('all');
-const selectedYearFilter = ref('all');
-const selectedQuarterFilter = ref('all');
+const selectedYearFilter = ref(String(new Date().getFullYear()));
+const selectedQuarterFilter = ref(`Q${Math.floor(new Date().getMonth() / 3) + 1}`);
 
 import ModalSelect from './ModalSelect.vue';
 
@@ -56,12 +56,15 @@ watch(currentTab, () => {
 
 // Reset quarter and fetch year-specific history when year changes
 watch(selectedYearFilter, async (newYear) => {
-  selectedQuarterFilter.value = 'all';
-
   if (newYear === 'all') {
+    selectedQuarterFilter.value = 'all';
     await loadAllDataIfNeeded();
     return;
   }
+
+  // Default to current quarter when a specific year is selected
+  const currentQ = `Q${Math.floor(new Date().getMonth() / 3) + 1}`;
+  selectedQuarterFilter.value = currentQ;
 
   // Skip if we already have data for this year
   const alreadyHave = store.history.some(h => h.seasonYear?.value === newYear);

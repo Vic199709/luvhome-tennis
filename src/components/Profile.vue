@@ -190,6 +190,75 @@ const latestMatchPointsChange = computed(() => {
   return { winPoints: winVal, losePoints: loseVal, isWinBold: won, isLoseBold: !won };
 });
 
+// 4. Season & Annual Match Stats
+const currentYear = new Date().getFullYear();
+const currentQuarterStr = `Q${Math.floor(new Date().getMonth() / 3) + 1}`;
+
+const seasonUserMatches = computed(() => {
+  return userMatches.value.filter(match => {
+    const dt = match.matchDateTime?.value;
+    if (!dt) return false;
+    const d = new Date(dt);
+    return d.getFullYear() === currentYear &&
+      `Q${Math.floor(d.getMonth() / 3) + 1}` === currentQuarterStr;
+  });
+});
+
+const yearUserMatches = computed(() => {
+  return userMatches.value.filter(match => {
+    const dt = match.matchDateTime?.value;
+    if (!dt) return false;
+    return new Date(dt).getFullYear() === currentYear;
+  });
+});
+
+const getMatchStats = (matches) => {
+  if (!user.value || !user.value.$id) {
+    return { doublesWins: 0, singlesWins: 0, totalWins: 0, totalMatches: 0, winRate: '0.0' };
+  }
+  const uId = user.value.$id.value;
+  let doublesWins = 0, singlesWins = 0, totalWins = 0;
+
+  matches.forEach(match => {
+    const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
+    const isA = teamAPlayers.includes(uId);
+    const scoreA = parseInt(match.teamA_score?.value, 10) || 0;
+    const scoreB = parseInt(match.teamB_score?.value, 10) || 0;
+    const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
+    const doubles = (match.teamA?.value || []).length >= 2;
+    if (won) {
+      totalWins++;
+      if (doubles) doublesWins++;
+      else singlesWins++;
+    }
+  });
+
+  const totalMatches = matches.length;
+  const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0';
+  return { doublesWins, singlesWins, totalWins, totalMatches, winRate };
+};
+
+const seasonStats = computed(() => getMatchStats(seasonUserMatches.value));
+const yearStats = computed(() => getMatchStats(yearUserMatches.value));
+
+const seasonPoints = computed(() => {
+  if (!user.value || !activeTeamId.value) return 0;
+  const uId = user.value.$id?.value;
+  return store.history
+    .filter(h => h.playerID?.value === uId && h.teamID?.value === activeTeamId.value &&
+      h.seasonYear?.value === String(currentYear) && h.seasonQuarter?.value === currentQuarterStr)
+    .reduce((sum, h) => sum + (parseInt(h.pointChange?.value, 10) || 0), 0);
+});
+
+const yearPoints = computed(() => {
+  if (!user.value || !activeTeamId.value) return 0;
+  const uId = user.value.$id?.value;
+  return store.history
+    .filter(h => h.playerID?.value === uId && h.teamID?.value === activeTeamId.value &&
+      h.seasonYear?.value === String(currentYear))
+    .reduce((sum, h) => sum + (parseInt(h.pointChange?.value, 10) || 0), 0);
+});
+
 // 3. Top 8 Progress Calculations
 const activeTeamRankings = computed(() => {
   if (!activeTeamId.value) return [];
@@ -359,6 +428,98 @@ const getPlayerNameAtRank = (rank) => {
             <span v-if="hasPending" class="asterisk-red" title="包含未審核比賽">*</span>
           </span>
         </div>
+      </div>
+
+      <!-- Season & Annual Stats -->
+      <div class="profile-period-stats">
+
+        <!-- 當季 -->
+        <div class="period-block">
+          <span class="profile-stat-label">{{ currentYear }}-{{ currentQuarterStr }}</span>
+
+          <!-- Wins / Total -->
+          <div class="period-wins-row">
+            <svg class="period-icon-trophy" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+            </svg>
+            <span class="period-wins-num">{{ seasonStats.totalWins }} 勝</span>
+            <span class="period-slash">/</span>
+            <span class="period-total-num">{{ seasonStats.totalMatches }}</span>
+          </div>
+
+          <!-- Doubles | Singles -->
+          <div class="period-type-row">
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+            </svg>
+            <span class="period-type-num">{{ seasonStats.doublesWins }}</span>
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+            <span class="period-type-num">{{ seasonStats.singlesWins }}</span>
+          </div>
+
+          <!-- Win rate + Points -->
+          <div class="period-meta-row">
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+            <span class="period-rate">{{ seasonStats.winRate }}%</span>
+            <svg class="period-icon-star" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+            <span class="period-pts-val">{{ seasonPoints }}</span>
+          </div>
+        </div>
+
+        <div class="period-col-divider"></div>
+
+        <!-- 年度 -->
+        <div class="period-block">
+          <span class="profile-stat-label">{{ currentYear }}</span>
+
+          <div class="period-wins-row">
+            <svg class="period-icon-trophy" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
+            </svg>
+            <span class="period-wins-num">{{ yearStats.totalWins }} 勝</span>
+            <span class="period-slash">/</span>
+            <span class="period-total-num">{{ yearStats.totalMatches }}</span>
+          </div>
+
+          <div class="period-type-row">
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+            </svg>
+            <span class="period-type-num">{{ yearStats.doublesWins }}</span>
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+            <span class="period-type-num">{{ yearStats.singlesWins }}</span>
+          </div>
+
+          <div class="period-meta-row">
+            <svg class="period-icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+              <polyline points="17 6 23 6 23 12" />
+            </svg>
+            <span class="period-rate">{{ yearStats.winRate }}%</span>
+            <svg class="period-icon-star" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+            <span class="period-pts-val">{{ yearPoints }}</span>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -808,14 +969,24 @@ const getPlayerNameAtRank = (rank) => {
   padding-bottom: 4px;
 }
 
-/* Hide scrollbar for standard browsers but allow scrolling if needed */
 .top-eight-list::-webkit-scrollbar {
-  display: none;
+  height: 4px;
+}
+
+.top-eight-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+.top-eight-list::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 2px;
+  opacity: 0.6;
 }
 
 .top-eight-list {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primary) rgba(0, 0, 0, 0.05);
 }
 
 .top-eight-item {
@@ -966,5 +1137,110 @@ const getPlayerNameAtRank = (rank) => {
 .text-muted {
   color: var(--color-text-muted);
   font-weight: normal;
+}
+
+/* Season & Annual Stats */
+.profile-period-stats {
+  display: flex;
+  flex-direction: row;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 14px;
+}
+
+.period-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.period-col-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  align-self: stretch;
+  margin: 0 4px;
+}
+
+/* Wins / Total row */
+.period-wins-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.period-icon-trophy {
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+}
+
+.period-wins-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--color-accent);
+  line-height: 1;
+}
+
+.period-slash {
+  font-size: 16px;
+  font-weight: 300;
+  opacity: 0.45;
+  line-height: 1;
+}
+
+.period-total-num {
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.7;
+  line-height: 1;
+}
+
+/* Doubles | Singles row */
+.period-type-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.period-icon-sm {
+  width: 13px;
+  height: 13px;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.period-type-num {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* Win rate + Points row */
+.period-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.period-rate {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.period-icon-star {
+  width: 12px;
+  height: 12px;
+  color: var(--color-accent);
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.period-pts-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-accent);
 }
 </style>

@@ -28,9 +28,18 @@ export async function handler(event, context) {
         if (qParams.isVerified) {
           query += ` and isVerified in ("${qParams.isVerified}")`;
         }
-        query += ` order by matchDateTime desc limit 50`;
-        const data = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(query)}`);
-        return responseJson(data.records || []);
+        query += ` order by matchDateTime desc`;
+        const LIMIT = 500;
+        const allRecords = [];
+        let offset = 0;
+        while (true) {
+          const data = await kintoneFetch('matches', `/k/v1/records.json?app=194&query=${encodeURIComponent(query + ` limit ${LIMIT} offset ${offset}`)}`);
+          const records = data.records || [];
+          allRecords.push(...records);
+          if (records.length < LIMIT) break;
+          offset += LIMIT;
+        }
+        return responseJson(allRecords);
       } else if (qParams.isVerified) {
         query = `isVerified in ("${qParams.isVerified}")`;
         if (qParams.isVerified === 'true') {
