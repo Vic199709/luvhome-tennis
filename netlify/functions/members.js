@@ -30,13 +30,6 @@ export async function handler(event, context) {
       const sanitizedRecords = (data.records || []).map(record => {
         const sanitized = { ...record };
         if (!isRaw) {
-          if (sanitized.playerPhone) {
-            const rawPhone = sanitized.playerPhone.value || '';
-            sanitized.playerPhone = {
-              ...sanitized.playerPhone,
-              value: rawPhone ? `******${rawPhone.slice(-4)}` : ''
-            };
-          }
           if (sanitized.birthday) {
             sanitized.birthday = { ...sanitized.birthday, value: '' };
           }

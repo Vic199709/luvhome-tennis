@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { store, refreshAllData, showToast, API } from '../scripts/store';
+import { store, showToast, API } from '../scripts/store';
 
 // Settings form — sync from DB values whenever settings finish loading
 const settingsForm = ref({ ...store.settings });
@@ -17,12 +17,12 @@ const saveSettings = async () => {
     const res = await API.updateSettings(settingsForm.value);
     if (res.success) {
       Object.assign(store.settings, settingsForm.value);
-      showToast('設定已儲存', 'success');
+      showToast('設定已更新', 'success');
     } else {
-      showToast('儲存失敗: ' + (res.error || '未知錯誤'), 'error');
+      showToast('更新失敗：' + (res.error || '未知錯誤'), 'error');
     }
   } catch (err) {
-    showToast('儲存異常，請重試', 'error');
+    showToast('更新異常，請重試', 'error');
   } finally {
     isSavingSettings.value = false;
   }
@@ -67,10 +67,10 @@ const submitAdminPassword = async () => {
       saveAdminSession();
       isAdminAuthed.value = true;
     } else {
-      authError.value = res.error || '密碼錯誤';
+      authError.value = res.error || '密碼錯誤，請再試一次。';
     }
   } catch (err) {
-    authError.value = '驗證失敗，請重試。';
+    authError.value = '驗證失敗，請稍後再試。';
   } finally {
     isAuthLoading.value = false;
     adminPassword.value = '';
@@ -117,6 +117,19 @@ const formatMatchDate = (dateStr) => {
 const loadAdminMembers = async () => {
   try {
     store.isLoading = true;
+
+    if (!store.settingsLoaded) {
+      try {
+        const settings = await API.getSettings();
+        if (settings) {
+          store.settings = { ...store.settings, ...settings };
+          store.settingsLoaded = true;
+          settingsForm.value = { ...store.settings };
+        }
+      } catch (err) {
+        console.error('Failed to load admin settings:', err);
+      }
+    }
 
     const mergeMembersById = (currentMembers, incomingMembers) => {
       const mergedById = new Map(currentMembers.map(member => [member.$id?.value, member]));
@@ -184,13 +197,13 @@ const approveMember = async (id) => {
     const res = await API.verifyMember(id);
     if (res.id) {
       showToast('會員驗證成功！', 'success');
-      await refreshAllData();
+      await loadAdminMembers();
     } else {
-      showToast('驗證失敗: ' + (res.error || '未知伺服器錯誤'), 'error');
+      showToast('會員驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
     }
   } catch (err) {
     console.error(err);
-    showToast('驗證處理異常，請重試。', 'error');
+    showToast('會員驗證異常，請重試。', 'error');
   } finally {
     verifyingMemberId.value = null;
   }
@@ -202,14 +215,14 @@ const approveMatch = async (matchID) => {
   try {
     const res = await API.verifyMatch(matchID);
     if (res.success) {
-      showToast('比分已成功驗證並過帳！球員與球隊積分已更新。', 'success');
-      await refreshAllData();
+      showToast('比賽已驗證，球員積分已更新。', 'success');
+      await loadAdminMembers();
     } else {
-      showToast('審核過帳失敗: ' + (res.error || '未知伺服器錯誤'), 'error');
+      showToast('比賽驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
     }
   } catch (err) {
     console.error(err);
-    showToast('過帳處理異常，請重試。', 'error');
+    showToast('比賽驗證異常，請重試。', 'error');
   } finally {
     verifyingMatchId.value = null;
   }
@@ -223,7 +236,7 @@ const approveMatch = async (matchID) => {
     <div v-if="!isAdminAuthed" class="login-container">
       <div class="login-logo">🔐</div>
       <h1 class="login-title">管理員登入</h1>
-      <p class="login-subtitle">請輸入管理員密碼以進入審核主控台</p>
+      <p class="login-subtitle">請輸入管理員密碼以進入後台</p>
 
       <div class="card login-card">
         <form @submit.prevent="submitAdminPassword" novalidate>
@@ -231,7 +244,7 @@ const approveMatch = async (matchID) => {
             <label for="admin-password" class="form-label">管理員密碼</label>
             <div class="input-wrapper">
               <input type="password" id="admin-password" v-model="adminPassword"
-                :class="['input-control', { 'input-error': authError }]" placeholder="請輸入管理員密碼"
+                :class="['input-control', { 'input-error': authError }]" placeholder="請輸入密碼"
                 autocomplete="current-password" :disabled="isAuthLoading" />
               <button v-if="adminPassword" type="button" class="clear-btn" @click="adminPassword = ''; authError = ''"
                 aria-label="清除輸入" :disabled="isAuthLoading">
@@ -255,7 +268,7 @@ const approveMatch = async (matchID) => {
           </div>
 
           <button type="submit" class="btn btn-primary" :disabled="isAuthLoading || !adminPassword">
-            <span>{{ isAuthLoading ? '驗證中...' : '進入管理主控台' }}</span>
+            <span>{{ isAuthLoading ? '驗證中...' : '進入後台' }}</span>
             <svg v-if="!isAuthLoading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
@@ -276,7 +289,7 @@ const approveMatch = async (matchID) => {
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          管理員審核主控台
+          管理後台
         </h2>
         <button type="button" class="logout-btn" @click="logoutAdmin">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -285,7 +298,7 @@ const approveMatch = async (matchID) => {
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          登出
+          退出登入
         </button>
       </div>
 
@@ -294,15 +307,15 @@ const approveMatch = async (matchID) => {
         <div class="admin-tab-bar">
           <button type="button" @click="activeTab = 'members'"
             :class="['admin-tab-btn', { active: activeTab === 'members' }]">
-            待驗證會員
+            待審核會員
           </button>
           <button type="button" @click="activeTab = 'matches'"
             :class="['admin-tab-btn', { active: activeTab === 'matches' }]">
-            待驗證比賽
+            待審核比賽
           </button>
           <button type="button" @click="activeTab = 'settings'"
             :class="['admin-tab-btn', { active: activeTab === 'settings' }]">
-            系統設定
+            全站設定
           </button>
         </div>
 
@@ -310,7 +323,7 @@ const approveMatch = async (matchID) => {
         <div v-show="activeTab === 'members'" class="admin-list">
           <div v-if="unverifiedMembers.length === 0"
             style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;">
-            目前沒有待審核的會員
+            目前沒有待審核會員
           </div>
 
           <div v-else>
@@ -327,9 +340,9 @@ const approveMatch = async (matchID) => {
                     {{(m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無隊伍'}}
                   </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" :disabled="verifyingMemberId === m.$id.value"
+                <button type="button" class="btn btn-accent btn-sm" style="color: white;" :disabled="verifyingMemberId === m.$id.value"
                   @click="approveMember(m.$id.value)">
-                  {{ verifyingMemberId === m.$id.value ? '…' : '核准' }}
+                  {{ verifyingMemberId === m.$id.value ? '…' : '驗證' }}
                 </button>
               </div>
             </div>
@@ -340,7 +353,7 @@ const approveMatch = async (matchID) => {
         <div v-show="activeTab === 'matches'" class="admin-list">
           <div v-if="unverifiedMatches.length === 0"
             style="text-align: center; color: var(--color-text-muted); padding: 20px 0; font-size: 14px;">
-            目前沒有待審核的比賽比分
+            目前沒有待審核比賽
           </div>
 
           <div v-else>
@@ -360,7 +373,7 @@ const approveMatch = async (matchID) => {
                 </div>
                 <button type="button" class="btn btn-accent btn-sm" style="color: white;"
                   :disabled="verifyingMatchId === match.$id.value" @click="approveMatch(match.$id.value)">
-                  {{ verifyingMatchId === match.$id.value ? '…' : '過帳' }}
+                  {{ verifyingMatchId === match.$id.value ? '…' : '驗證' }}
                 </button>
               </div>
             </div>
@@ -378,11 +391,11 @@ const approveMatch = async (matchID) => {
                 <line x1="21" y1="14" x2="3" y2="14" />
                 <line x1="21" y1="18" x2="3" y2="18" />
               </svg>
-              頂部顯示文字
+              首頁頂部文字
             </div>
             <div class="settings-row settings-row-full">
               <input type="text" class="settings-input settings-input-full" v-model="settingsForm.top_bar_subtitle"
-                placeholder="（空白則不顯示）" />
+                placeholder="留空則不顯示" />
             </div>
           </div>
 
@@ -395,7 +408,7 @@ const approveMatch = async (matchID) => {
                 <line x1="8" y1="2" x2="8" y2="6" />
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
-              平日
+              平日賽事
             </div>
             <div class="settings-row">
               <label class="settings-label">
@@ -403,7 +416,7 @@ const approveMatch = async (matchID) => {
                   <path
                     d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
                 </svg>
-                勝方
+                勝方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input" v-model.number="settingsForm.weekday_win_score" />
@@ -418,7 +431,7 @@ const approveMatch = async (matchID) => {
                   <line x1="15" y1="9" x2="9" y2="15" />
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
-                負方
+                負方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input" v-model.number="settingsForm.weekday_lose_score" />
@@ -433,7 +446,7 @@ const approveMatch = async (matchID) => {
                 stroke-linejoin="round" class="settings-group-icon">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
               </svg>
-              週六（挑戰日）
+              週六挑戰賽
             </div>
             <div class="settings-row">
               <label class="settings-label">
@@ -441,7 +454,7 @@ const approveMatch = async (matchID) => {
                   <path
                     d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
                 </svg>
-                勝方
+                勝方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input" v-model.number="settingsForm.challenge_win_score" />
@@ -456,7 +469,7 @@ const approveMatch = async (matchID) => {
                   <line x1="15" y1="9" x2="9" y2="15" />
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
-                負方
+                負方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input"
@@ -473,7 +486,7 @@ const approveMatch = async (matchID) => {
                 <circle cx="12" cy="8" r="6" />
                 <path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" />
               </svg>
-              季賽、年終賽
+              季賽／年終賽
             </div>
             <div class="settings-row">
               <label class="settings-label">
@@ -481,7 +494,7 @@ const approveMatch = async (matchID) => {
                   <path
                     d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v3c0 2.44 1.72 4.48 4 4.9V19H4v2h16v-2h-3v-4.1c2.28-.42 4-2.46 4-4.9V7c0-1.1-.9-2-2-2zM5 10V7h2v3H5zm14 0h-2V7h2v3z" />
                 </svg>
-                勝方
+                勝方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input" v-model.number="settingsForm.finals_win_score" />
@@ -496,7 +509,7 @@ const approveMatch = async (matchID) => {
                   <line x1="15" y1="9" x2="9" y2="15" />
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
-                負方
+                負方加分
               </label>
               <div class="settings-input-row">
                 <input type="number" min="0" class="settings-input" v-model.number="settingsForm.finals_lose_score" />
@@ -512,7 +525,7 @@ const approveMatch = async (matchID) => {
               <polyline points="17 21 17 13 7 13 7 21" />
               <polyline points="7 3 7 8 15 8" />
             </svg>
-            {{ isSavingSettings ? '儲存中...' : '儲存設定' }}
+            {{ isSavingSettings ? '更新中...' : '更新設定' }}
           </button>
 
         </div>

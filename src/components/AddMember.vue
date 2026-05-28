@@ -19,7 +19,7 @@ const formErrors = ref([]);
 const isSubmitting = ref(false);
 
 const teamOptions = computed(() => {
-  return store.teams.map(t => ({ value: t.teamID.value, label: t.teamName.value }));
+  return store.teams.map(t => ({ value: t.$id.value, label: t.teamName.value }));
 });
 
 const handleRegisterSubmit = async () => {
@@ -60,7 +60,7 @@ const handleRegisterSubmit = async () => {
 
   // Format teams for payload
   const teamRecords = checkedTeams.value.map(tId => {
-    const t = store.teams.find(teamObj => teamObj.teamID.value === tId || teamObj.$id.value === tId);
+    const t = store.teams.find(teamObj => teamObj.$id.value === tId);
     return {
       value: {
         teamID: { value: tId },
