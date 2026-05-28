@@ -18,6 +18,15 @@ const fieldErrors = ref({});
 const formErrors = ref([]);
 const isSubmitting = ref(false);
 
+const normalizePhone = (phone) => phone.replace(/\s+/g, '');
+
+const loadAllMembersIfNeeded = async () => {
+  if (store.allMembersLoaded) return;
+  const allMembers = await API.getMembers({ raw: 'true' });
+  store.members = allMembers || [];
+  store.allMembersLoaded = true;
+};
+
 const teamOptions = computed(() => {
   return store.teams.map(t => ({ value: t.$id.value, label: t.teamName.value }));
 });
@@ -45,6 +54,24 @@ const handleRegisterSubmit = async () => {
   } else if (!/^09[0-9]{8}$/.test(trimPhone)) {
     errors.push('手機號碼格式不正確，請輸入 09 開頭的 10 碼數字。');
     fieldErrors.value.phone = '請輸入 09 開頭的 10 碼數字。';
+  }
+
+  if (errors.length === 0) {
+    try {
+      await loadAllMembersIfNeeded();
+      const duplicateMember = store.members.find(member => {
+        const existingPhone = member.playerPhone?.value || '';
+        return normalizePhone(existingPhone) === normalizePhone(trimPhone);
+      });
+
+      if (duplicateMember) {
+        const duplicateName = duplicateMember.playerName?.value || '該會員';
+        errors.push(`此手機號碼已存在：${duplicateName}`);
+        fieldErrors.value.phone = '此手機號碼已存在，請確認是否重複輸入。';
+      }
+    } catch (err) {
+      console.error('Failed to load members for phone duplicate check:', err);
+    }
   }
 
   if (errors.length > 0) {
