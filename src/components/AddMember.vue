@@ -5,9 +5,9 @@ import ModalSelect from './ModalSelect.vue';
 
 const memberName = ref('');
 const memberPhone = ref('');
-const memberGender = ref('不透漏');
+const memberGender = ref('不公開');
 const genderOptions = [
-  { value: '不透漏', label: '不透漏' },
+  { value: '不公開', label: '不公開' },
   { value: '男', label: '男' },
   { value: '女', label: '女' }
 ];
@@ -19,7 +19,7 @@ const formErrors = ref([]);
 const isSubmitting = ref(false);
 
 const teamOptions = computed(() => {
-  return store.teams.map(t => ({ value: t.$id.value, label: t.teamName.value }));
+  return store.teams.map(t => ({ value: t.teamID.value, label: t.teamName.value }));
 });
 
 const handleRegisterSubmit = async () => {
@@ -33,18 +33,18 @@ const handleRegisterSubmit = async () => {
   // 1. Name verification
   const trimName = memberName.value.trim();
   if (!trimName) {
-    errors.push('會員姓名為必填欄位。');
-    fieldErrors.value.name = '此欄位必填。';
+    errors.push('請輸入會員姓名。');
+    fieldErrors.value.name = '請輸入姓名。';
   }
 
   // 2. Phone verification
   const trimPhone = memberPhone.value.trim();
   if (!trimPhone) {
-    errors.push('手機號碼為必填欄位。');
-    fieldErrors.value.phone = '此欄位必填。';
+    errors.push('請輸入手機號碼。');
+    fieldErrors.value.phone = '請輸入手機號碼。';
   } else if (!/^09[0-9]{8}$/.test(trimPhone)) {
-    errors.push('手機號碼格式不正確，應為 09 開頭的 10 碼數字。');
-    fieldErrors.value.phone = '格式不合規：09開頭共10碼數字。';
+    errors.push('手機號碼格式不正確，請輸入 09 開頭的 10 碼數字。');
+    fieldErrors.value.phone = '請輸入 09 開頭的 10 碼數字。';
   }
 
   if (errors.length > 0) {
@@ -60,7 +60,7 @@ const handleRegisterSubmit = async () => {
 
   // Format teams for payload
   const teamRecords = checkedTeams.value.map(tId => {
-    const t = store.teams.find(teamObj => teamObj.$id.value === tId);
+    const t = store.teams.find(teamObj => teamObj.teamID.value === tId || teamObj.$id.value === tId);
     return {
       value: {
         teamID: { value: tId },
@@ -85,7 +85,7 @@ const handleRegisterSubmit = async () => {
     const res = await API.addMember(record);
 
     if (res.id) {
-      showToast('註冊成功！帳號目前為【未驗證】狀態，請聯絡管理員核准。', 'success');
+      showToast('會員已送出審核，帳號目前為【未驗證】狀態。', 'success');
 
       // Reset form
       memberName.value = '';
@@ -102,11 +102,11 @@ const handleRegisterSubmit = async () => {
         store.currentView = 'view-profile';
       }
     } else {
-      showToast('註冊失敗: ' + (res.error || '未知伺服器錯誤'), 'error', handleRegisterSubmit);
+      showToast('新增會員失敗：' + (res.error || '未知伺服器錯誤'), 'error', handleRegisterSubmit);
     }
   } catch (err) {
     console.error('Registration failed:', err);
-    showToast('網路或系統操作異常，註冊失敗，請重試。', 'error', handleRegisterSubmit);
+    showToast('網路或系統異常，請稍後再試。', 'error', handleRegisterSubmit);
   } finally {
     isSubmitting.value = false;
   }
@@ -123,7 +123,7 @@ const handleRegisterSubmit = async () => {
         <line x1="20" y1="8" x2="20" y2="14" />
         <line x1="23" y1="11" x2="17" y2="11" />
       </svg>
-      新增聯盟會員
+      新增會員
     </h2>
 
     <div class="card">
@@ -137,7 +137,7 @@ const handleRegisterSubmit = async () => {
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <span>請修正以下表單錯誤：</span>
+            <span>請先修正以下欄位：</span>
           </div>
           <ul class="form-error-banner-list">
             <li v-for="err in formErrors" :key="err">{{ err }}</li>
@@ -177,7 +177,7 @@ const handleRegisterSubmit = async () => {
             <span>{{ fieldErrors.phone }}</span>
           </div>
           <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 4px;">
-            格式限制：09 開頭共 10 碼數字
+            手機格式：09 開頭共 10 碼數字
           </div>
         </div>
 
@@ -197,13 +197,13 @@ const handleRegisterSubmit = async () => {
 
         <!-- Multi-select Representative Teams -->
         <div class="form-group">
-          <label class="form-label">代表球隊 (可多選)</label>
-          <ModalSelect v-model="checkedTeams" :options="teamOptions" :multiple="true" title="選擇代表球隊 (可多選)"
+          <label class="form-label">代表球隊（可複選）</label>
+          <ModalSelect v-model="checkedTeams" :options="teamOptions" :multiple="true" title="選擇代表球隊（可複選）"
             placeholder="請選擇代表球隊" :disabled="isSubmitting" />
         </div>
 
         <button type="submit" class="btn btn-primary" style="margin-top: 10px;" :disabled="isSubmitting">
-          <span>{{ isSubmitting ? '處理中...' : '新增並提交審核' }}</span>
+          <span>{{ isSubmitting ? '送出中...' : '送出審核' }}</span>
           <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />

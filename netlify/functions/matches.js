@@ -195,15 +195,16 @@ export async function handler(event, context) {
           app: 194,
           id: matchID,
           record: {
-            isVerified: { value: 'true' }
+            isVerified: { value: 'true' },
+            seasonYear: { value: seasonYear },
+            seasonQuarter: { value: seasonQuarter }
           }
         })
       });
 
-      // 4. Update each player's score and matches in app 191, team score in app 192
+      // 4. Update each player's score and matches in app 191
       for (const history of scoreHistories) {
         const playerID = history.playerID.value;
-        const teamID = history.teamID.value;
         const change = parseInt(history.pointChange.value, 10) || 0;
 
         const memberQuery = await kintoneFetch('members', `/k/v1/records.json?app=191&query=$id = "${playerID}"`);
@@ -225,22 +226,6 @@ export async function handler(event, context) {
           });
         }
 
-        const teamQuery = await kintoneFetch('teams', `/k/v1/records.json?app=192&query=$id = "${teamID}"`);
-        if (teamQuery.records && teamQuery.records.length > 0) {
-          const team = teamQuery.records[0];
-          const currentTeamScore = parseInt(team.teamScore.value, 10) || 0;
-
-          await kintoneFetch('teams', '/k/v1/record.json', {
-            method: 'PUT',
-            body: JSON.stringify({
-              app: 192,
-              id: teamID,
-              record: {
-                teamScore: { value: String(currentTeamScore + change) }
-              }
-            })
-          });
-        }
       }
 
       return responseJson({ success: true, message: 'Match and member scores updated successfully' });

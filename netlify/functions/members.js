@@ -26,20 +26,20 @@ export async function handler(event, context) {
       }
 
       const data = await kintoneFetch('members', url);
+      const isRaw = qParams.raw === 'true';
       const sanitizedRecords = (data.records || []).map(record => {
         const sanitized = { ...record };
-        if (sanitized.playerPhone) {
-          const rawPhone = sanitized.playerPhone.value || '';
-          sanitized.playerPhone = {
-            ...sanitized.playerPhone,
-            value: rawPhone ? `******${rawPhone.slice(-4)}` : ''
-          };
-        }
-        if (sanitized.birthday) {
-          sanitized.birthday = {
-            ...sanitized.birthday,
-            value: ''
-          };
+        if (!isRaw) {
+          if (sanitized.playerPhone) {
+            const rawPhone = sanitized.playerPhone.value || '';
+            sanitized.playerPhone = {
+              ...sanitized.playerPhone,
+              value: rawPhone ? `******${rawPhone.slice(-4)}` : ''
+            };
+          }
+          if (sanitized.birthday) {
+            sanitized.birthday = { ...sanitized.birthday, value: '' };
+          }
         }
         return sanitized;
       });

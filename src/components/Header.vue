@@ -29,8 +29,8 @@ const handleGoHome = () => {
 };
 
 // 跑馬燈
-const SCROLL_SPEED = 80; // px/s
-const GAP_S = 0.5;       // 空白秒數
+const SCROLL_SPEED = 20; // px/s
+const GAP_S = 4;       // 空白秒數
 
 const subtitleText = ref(null);
 const isOverflow = ref(false);

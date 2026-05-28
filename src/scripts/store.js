@@ -135,9 +135,9 @@ export const store = reactive({
 });
 
 // Show lightweight toast notifications
-export function showToast(message, type = 'info') {
+export function showToast(message, type = 'info', action = null) {
   const id = Date.now() + Math.random().toString(36).substr(2, 9);
-  const toastObj = { id, message, type };
+  const toastObj = { id, message, type, action };
   store.toasts.push(toastObj);
 
   setTimeout(() => {

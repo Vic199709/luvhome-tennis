@@ -194,6 +194,76 @@ const latestMatchPointsChange = computed(() => {
 const currentYear = new Date().getFullYear();
 const currentQuarterStr = `Q${Math.floor(new Date().getMonth() / 3) + 1}`;
 
+// 勝負閾值：設定中最高的負方積分 + 1 即為最低勝方積分
+const maxLoseScore = computed(() => {
+  return Math.max(
+    parseInt(store.settings.weekday_lose_score) || 0,
+    parseInt(store.settings.challenge_lose_score) || 0,
+    parseInt(store.settings.finals_lose_score) || 0
+  );
+});
+
+// 取得本球隊本季 / 本年度的 history 記錄（每筆 = 一場比賽積分異動）
+const seasonTeamHistories = computed(() => {
+  if (!user.value || !activeTeamId.value) return [];
+  const uId = user.value.$id?.value;
+  return store.history.filter(h =>
+    h.playerID?.value === uId &&
+    h.teamID?.value === activeTeamId.value &&
+    h.seasonYear?.value === String(currentYear) &&
+    h.seasonQuarter?.value === currentQuarterStr
+  );
+});
+
+const yearTeamHistories = computed(() => {
+  if (!user.value || !activeTeamId.value) return [];
+  const uId = user.value.$id?.value;
+  return store.history.filter(h =>
+    h.playerID?.value === uId &&
+    h.teamID?.value === activeTeamId.value &&
+    h.seasonYear?.value === String(currentYear)
+  );
+});
+
+// 從 history 推算場數與勝場，再回查 userMatches 補充雙/單打分類
+const getTeamMatchStats = (histories, allUserSeasonMatches) => {
+  if (!histories.length) {
+    return { doublesWins: 0, singlesWins: 0, totalWins: 0, totalMatches: 0, winRate: '0.0' };
+  }
+
+  const threshold = maxLoseScore.value;
+  let totalWins = 0;
+  histories.forEach(h => {
+    if ((parseInt(h.pointChange?.value, 10) || 0) > threshold) totalWins++;
+  });
+  const totalMatches = histories.length;
+  const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0';
+
+  // 用場次數量截取比賽清單（依時間排序取最近 N 場）推算雙/單打
+  const uId = user.value?.$id?.value;
+  const sortedMatches = [...allUserSeasonMatches].sort((a, b) => {
+    const tA = a.matchDateTime?.value ? new Date(a.matchDateTime.value).getTime() : 0;
+    const tB = b.matchDateTime?.value ? new Date(b.matchDateTime.value).getTime() : 0;
+    return tB - tA;
+  }).slice(0, totalMatches);
+
+  let doublesWins = 0, singlesWins = 0;
+  sortedMatches.forEach(match => {
+    const teamAPlayers = (match.teamA?.value || []).map(r => r.value?.playerID_A?.value).filter(Boolean);
+    const isA = teamAPlayers.includes(uId);
+    const scoreA = parseInt(match.teamA_score?.value, 10) || 0;
+    const scoreB = parseInt(match.teamB_score?.value, 10) || 0;
+    const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
+    if (won) {
+      const doubles = (match.teamA?.value || []).length >= 2;
+      if (doubles) doublesWins++;
+      else singlesWins++;
+    }
+  });
+
+  return { doublesWins, singlesWins, totalWins, totalMatches, winRate };
+};
+
 const seasonUserMatches = computed(() => {
   return userMatches.value.filter(match => {
     const dt = match.matchDateTime?.value;
@@ -212,34 +282,8 @@ const yearUserMatches = computed(() => {
   });
 });
 
-const getMatchStats = (matches) => {
-  if (!user.value || !user.value.$id) {
-    return { doublesWins: 0, singlesWins: 0, totalWins: 0, totalMatches: 0, winRate: '0.0' };
-  }
-  const uId = user.value.$id.value;
-  let doublesWins = 0, singlesWins = 0, totalWins = 0;
-
-  matches.forEach(match => {
-    const teamAPlayers = (match.teamA?.value || []).map(row => row.value?.playerID_A?.value).filter(Boolean);
-    const isA = teamAPlayers.includes(uId);
-    const scoreA = parseInt(match.teamA_score?.value, 10) || 0;
-    const scoreB = parseInt(match.teamB_score?.value, 10) || 0;
-    const won = (isA && scoreA > scoreB) || (!isA && scoreB > scoreA);
-    const doubles = (match.teamA?.value || []).length >= 2;
-    if (won) {
-      totalWins++;
-      if (doubles) doublesWins++;
-      else singlesWins++;
-    }
-  });
-
-  const totalMatches = matches.length;
-  const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0';
-  return { doublesWins, singlesWins, totalWins, totalMatches, winRate };
-};
-
-const seasonStats = computed(() => getMatchStats(seasonUserMatches.value));
-const yearStats = computed(() => getMatchStats(yearUserMatches.value));
+const seasonStats = computed(() => getTeamMatchStats(seasonTeamHistories.value, seasonUserMatches.value));
+const yearStats = computed(() => getTeamMatchStats(yearTeamHistories.value, yearUserMatches.value));
 
 const seasonPoints = computed(() => {
   if (!user.value || !activeTeamId.value) return 0;
@@ -270,7 +314,10 @@ const activeTeamRankings = computed(() => {
     if (!hasTeam) return;
 
     const playerTeamHistories = store.history.filter(h => {
-      return h.playerID?.value === member.$id?.value && h.teamID?.value === activeTeamId.value;
+      return h.playerID?.value === member.$id?.value &&
+        h.teamID?.value === activeTeamId.value &&
+        h.seasonYear?.value === String(currentYear) &&
+        h.seasonQuarter?.value === currentQuarterStr;
     });
 
     const score = playerTeamHistories.reduce((sum, h) => {
@@ -533,7 +580,7 @@ const getPlayerNameAtRank = (rank) => {
           <line x1="12" y1="20" x2="12" y2="4" />
           <line x1="6" y1="20" x2="6" y2="14" />
         </svg>
-        <span class="top-eight-title">前八強</span>
+        <span class="top-eight-title">本季 TOP 8</span>
       </div>
 
       <div class="top-eight-list">

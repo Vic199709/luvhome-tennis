@@ -30,6 +30,13 @@ const getToastClass = (type) => {
   return `toast toast-${type} show`;
 };
 
+const handleToastAction = (toast) => {
+  if (typeof toast.action === 'function') {
+    toast.action();
+  }
+  removeToast(toast.id);
+};
+
 // Error Page Escape actions
 const handleErrBack = () => {
   if (store.fullPageError && store.fullPageError.backCallback) {
@@ -212,6 +219,9 @@ onMounted(async () => {
           <template v-else>ℹ️</template>
         </span>
         <span style="flex: 1;">{{ toast.message }}</span>
+        <button v-if="toast.action" type="button" class="toast-btn-retry" @click="handleToastAction(toast)">
+          重試
+        </button>
       </div>
     </div>
 

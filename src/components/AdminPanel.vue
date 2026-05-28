@@ -118,17 +118,25 @@ const loadAdminMembers = async () => {
   try {
     store.isLoading = true;
 
+    const mergeMembersById = (currentMembers, incomingMembers) => {
+      const mergedById = new Map(currentMembers.map(member => [member.$id?.value, member]));
+      incomingMembers.forEach(member => {
+        if (member?.$id?.value) {
+          mergedById.set(member.$id.value, member);
+        }
+      });
+      return Array.from(mergedById.values());
+    };
+
     // 1. Fetch unverified matches
     const unverifiedMatches = await API.getMatches({ isVerified: 'false' });
     const existingMatchIds = new Set(store.matches.map(m => m.$id?.value));
     const newMatches = (unverifiedMatches || []).filter(m => !existingMatchIds.has(m.$id?.value));
     store.matches = [...store.matches, ...newMatches];
 
-    // 2. Fetch unverified members
-    const unverified = await API.getMembers({ isVerified: 'false' });
-    const existingIds = new Set(store.members.map(m => m.$id?.value));
-    const newMembers = (unverified || []).filter(m => !existingIds.has(m.$id?.value));
-    store.members = [...store.members, ...newMembers];
+    // 2. Fetch unverified members (raw=true → no phone masking for admin)
+    const unverified = await API.getMembers({ isVerified: 'false', raw: 'true' });
+    store.members = mergeMembersById(store.members, unverified || []);
 
     // 3. Fetch members involved in these unverified matches
     const matchPlayerIds = [];
@@ -144,10 +152,8 @@ const loadAdminMembers = async () => {
     const missingIds = uniqueIds.filter(id => !store.members.some(m => m.$id?.value === id));
 
     if (missingIds.length > 0) {
-      const matchMembers = await API.getMembers({ ids: missingIds.join(',') });
-      const currentIds = new Set(store.members.map(m => m.$id?.value));
-      const filteredMatchMembers = (matchMembers || []).filter(m => !currentIds.has(m.$id?.value));
-      store.members = [...store.members, ...filteredMatchMembers];
+      const matchMembers = await API.getMembers({ ids: missingIds.join(','), raw: 'true' });
+      store.members = mergeMembersById(store.members, matchMembers || []);
     }
   } catch (err) {
     console.error('Failed to load admin data:', err);
@@ -296,7 +302,7 @@ const approveMatch = async (matchID) => {
           </button>
           <button type="button" @click="activeTab = 'settings'"
             :class="['admin-tab-btn', { active: activeTab === 'settings' }]">
-            積分設定
+            系統設定
           </button>
         </div>
 
@@ -309,18 +315,23 @@ const approveMatch = async (matchID) => {
 
           <div v-else>
             <div v-for="m in unverifiedMembers" :key="m.$id.value" class="card admin-card">
-              <div class="admin-card-header">
-                <span class="admin-card-title">{{ m.playerName.value }} ({{ m.gender.value }})</span>
-                <span class="badge badge-unverified">待驗證</span>
+              <div class="admin-card-row">
+                <div class="admin-card-info">
+                  <div class="admin-card-name">
+                    {{ m.playerName.value }}
+                    <span class="admin-card-meta">{{ m.gender.value }}</span>
+                  </div>
+                  <div class="admin-card-sub">
+                    {{ m.playerPhone.value }}
+                    <span class="admin-card-dot">·</span>
+                    {{(m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無隊伍'}}
+                  </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" :disabled="verifyingMemberId === m.$id.value"
+                  @click="approveMember(m.$id.value)">
+                  {{ verifyingMemberId === m.$id.value ? '…' : '核准' }}
+                </button>
               </div>
-              <div class="admin-card-detail">手機：{{ m.playerPhone.value }}</div>
-              <div class="admin-card-detail">
-                代表隊伍：{{(m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無'}}
-              </div>
-              <button type="button" class="btn btn-primary btn-sm" :disabled="verifyingMemberId === m.$id.value"
-                @click="approveMember(m.$id.value)">
-                {{ verifyingMemberId === m.$id.value ? '處理中...' : '核准驗證' }}
-              </button>
             </div>
           </div>
         </div>
@@ -334,20 +345,24 @@ const approveMatch = async (matchID) => {
 
           <div v-else>
             <div v-for="match in unverifiedMatches" :key="match.$id.value" class="card admin-card">
-              <div class="admin-card-header">
-                <span class="admin-card-title">比賽比分審核 (ID: {{ match.$id.value }})</span>
-                <span class="badge badge-unverified">未入帳</span>
+              <div class="admin-card-row">
+                <div class="admin-card-info">
+                  <div class="admin-match-teams">
+                    <span class="admin-match-side">{{ getPlayersNames(match.teamA, 'playerID_A') }}</span>
+                    <span class="admin-match-score">{{ match.teamA_score.value }} : {{ match.teamB_score.value }}</span>
+                    <span class="admin-match-side">{{ getPlayersNames(match.teamB, 'playerID_B') }}</span>
+                  </div>
+                  <div class="admin-card-sub">
+                    {{ formatMatchDate(match.matchDateTime.value) }}
+                    <span class="admin-card-dot">·</span>
+                    ID {{ match.$id.value }}
+                  </div>
+                </div>
+                <button type="button" class="btn btn-accent btn-sm" style="color: white;"
+                  :disabled="verifyingMatchId === match.$id.value" @click="approveMatch(match.$id.value)">
+                  {{ verifyingMatchId === match.$id.value ? '…' : '過帳' }}
+                </button>
               </div>
-              <div class="admin-card-detail">時間：{{ formatMatchDate(match.matchDateTime.value) }}</div>
-              <div class="admin-card-detail"
-                style="font-weight: 700; color: var(--color-primary); font-size: 14px; margin: 8px 0;">
-                {{ getPlayersNames(match.teamA, 'playerID_A') }} ({{ match.teamA_score.value }}) VS ({{
-                  match.teamB_score.value }}) {{ getPlayersNames(match.teamB, 'playerID_B') }}
-              </div>
-              <button type="button" class="btn btn-accent btn-sm" style="color: white;"
-                :disabled="verifyingMatchId === match.$id.value" @click="approveMatch(match.$id.value)">
-                {{ verifyingMatchId === match.$id.value ? '處理中...' : '核准過帳 (計算積分)' }}
-              </button>
             </div>
           </div>
         </div>
@@ -571,15 +586,86 @@ const approveMatch = async (matchID) => {
   gap: 12px;
 }
 
-/* Admin card — distinct from white parent */
+/* Admin card — distinct background, compact padding */
 :deep(.admin-card) {
   background-color: var(--color-bg-page);
   box-shadow: none;
+  padding: 10px 14px;
 }
 
 :deep(.admin-card):hover {
   transform: none;
   box-shadow: none;
+}
+
+.admin-card-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-card-row > .btn {
+  flex-shrink: 0;
+  width: auto;
+  min-width: 72px;
+}
+
+.admin-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.admin-card-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 4px;
+}
+
+.admin-card-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.admin-card-dot {
+  margin: 0 4px;
+  opacity: 0.4;
+}
+
+.admin-match-teams {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  line-height: 1.4;
+}
+
+.admin-match-side {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-match-score {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Settings panel */
