@@ -103,8 +103,6 @@ const handleRegisterSubmit = async () => {
     teams: { value: teamRecords },
     isVerified: { value: 'false' },
     isAdmin: { value: 'false' },
-    currentScore: { value: '0' },
-    totalMatches: { value: '0' },
     birthday: { value: memberBirthday.value }
   };
 

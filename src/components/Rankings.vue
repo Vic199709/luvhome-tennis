@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { ref, computed, watch } from 'vue';
-import { store, playerHasUnverifiedMatches, API } from '../scripts/store';
+import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory, API } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
@@ -131,10 +131,12 @@ const filteredRankings = computed(() => {
       return h.seasonQuarter?.value === selectedQuarterFilter.value;
     });
     const score = histories.reduce((sum, h) => sum + (parseInt(h.pointChange?.value, 10) || 0), 0);
+    const winCount = histories.filter(h => getWinningTeamIdsForHistory(h).includes(item.teamID)).length;
     return {
       ...item,
       score,
-      matchCount: histories.length
+      matchCount: histories.length,
+      winCount
     };
   });
 
@@ -381,7 +383,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true }
               {{ player.score }}
               <span v-if="playerHasUnverifiedMatches(player.playerID)" class="asterisk-red" title="含有未驗證比賽">*</span>
             </div>
-            <div class="ranking-matches">{{ player.matchCount }} 場比賽</div>
+            <div class="ranking-matches"> 勝場 {{ player.winCount }} </div>
           </div>
         </div>
       </template>

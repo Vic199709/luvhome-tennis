@@ -202,31 +202,6 @@ export async function handler(event, context) {
         })
       });
 
-      // 4. Update each player's score and matches in app 191
-      for (const history of scoreHistories) {
-        const playerID = history.playerID.value;
-        const change = parseInt(history.pointChange.value, 10) || 0;
-
-        const memberQuery = await kintoneFetch('members', `/k/v1/records.json?app=191&query=$id = "${playerID}"`);
-        if (memberQuery.records && memberQuery.records.length > 0) {
-          const member = memberQuery.records[0];
-          const currentScore = parseInt(member.currentScore.value, 10) || 0;
-          const currentMatches = parseInt(member.totalMatches.value, 10) || 0;
-
-          await kintoneFetch('members', '/k/v1/record.json', {
-            method: 'PUT',
-            body: JSON.stringify({
-              app: 191,
-              id: playerID,
-              record: {
-                currentScore: { value: String(currentScore + change) },
-                totalMatches: { value: String(currentMatches + 1) }
-              }
-            })
-          });
-        }
-
-      }
 
       return responseJson({ success: true, message: 'Match and member scores updated successfully' });
     }

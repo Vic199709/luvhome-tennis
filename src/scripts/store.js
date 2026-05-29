@@ -328,6 +328,28 @@ export function playerHasUnverifiedMatches(playerId) {
   });
 }
 
+// Return winning team IDs for a history record by looking up the linked match score.
+export function getWinningTeamIdsForHistory(history) {
+  const matchId = history?.matchID?.value;
+  if (!matchId) return [];
+
+  const match = store.matches.find(m => m.$id?.value === matchId);
+  if (!match) return [];
+
+  const scoreA = parseInt(match.teamA_score?.value, 10) || 0;
+  const scoreB = parseInt(match.teamB_score?.value, 10) || 0;
+  if (scoreA === scoreB) return [];
+
+  const winningTeamRows = scoreA > scoreB
+    ? (match.teamA?.value || [])
+    : (match.teamB?.value || []);
+  const winningTeamField = scoreA > scoreB ? 'teamID_A' : 'teamID_B';
+
+  return winningTeamRows
+    .map(row => row.value?.[winningTeamField]?.value)
+    .filter(Boolean);
+}
+
 // Validate tennis score according to standard tennis rules
 export function isValidTennisScore(scoreA, scoreB) {
   if (scoreA === scoreB) return false;

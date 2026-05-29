@@ -108,6 +108,23 @@ const getPlayersNames = (subtable, playerField) => {
   }).join(' / ');
 };
 
+const getMatchSidePlayers = (subtable, playerField, teamField) => {
+  if (!subtable || !subtable.value) return [];
+
+  return subtable.value.map(row => {
+    const pId = row.value?.[playerField]?.value;
+    const teamId = row.value?.[teamField]?.value;
+    const member = store.members.find(mem => mem.$id?.value === pId);
+    const team = store.teams.find(t => t.teamID?.value === teamId || t.$id?.value === teamId);
+
+    return {
+      id: pId || `${playerField}-${teamField}`,
+      name: member ? member.playerName.value : '未知球員',
+      teamName: team ? (team.teamName?.value || '無隊伍') : '無隊伍'
+    };
+  });
+};
+
 const formatMatchDate = (dateStr) => {
   if (!dateStr) return '-';
   const dateObj = new Date(dateStr);
@@ -197,6 +214,7 @@ const approveMember = async (id) => {
     const res = await API.verifyMember(id);
     if (res.id) {
       showToast('會員驗證成功！', 'success');
+      store.members = store.members.filter(m => m.$id?.value !== id);
       await loadAdminMembers();
     } else {
       showToast('會員驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
@@ -216,6 +234,7 @@ const approveMatch = async (matchID) => {
     const res = await API.verifyMatch(matchID);
     if (res.success) {
       showToast('比賽已驗證，球員積分已更新。', 'success');
+      store.matches = store.matches.filter(match => match.$id?.value !== matchID);
       await loadAdminMembers();
     } else {
       showToast('比賽驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
@@ -298,7 +317,7 @@ const approveMatch = async (matchID) => {
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          退出登入
+          退出後台
         </button>
       </div>
 
@@ -337,11 +356,22 @@ const approveMatch = async (matchID) => {
                   <div class="admin-card-sub">
                     {{ m.playerPhone.value }}
                     <span class="admin-card-dot">·</span>
-                    {{(m.teams.value || []).map(t => t.value.teamName.value).join(', ') || '無隊伍'}}
+                    <div class="admin-team-badges">
+                      <span
+                        v-for="team in (m.teams.value || [])"
+                        :key="team.value.teamID.value"
+                        class="admin-team-badge"
+                      >
+                        {{ team.value.teamName.value }}
+                      </span>
+                      <span v-if="!(m.teams.value || []).length" class="admin-team-badge admin-team-badge-empty">
+                        無隊伍
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <button type="button" class="btn btn-accent btn-sm" style="color: white;" :disabled="verifyingMemberId === m.$id.value"
-                  @click="approveMember(m.$id.value)">
+                <button type="button" class="btn btn-accent btn-sm" style="color: white;"
+                  :disabled="verifyingMemberId === m.$id.value" @click="approveMember(m.$id.value)">
                   {{ verifyingMemberId === m.$id.value ? '…' : '驗證' }}
                 </button>
               </div>
@@ -361,9 +391,27 @@ const approveMatch = async (matchID) => {
               <div class="admin-card-row">
                 <div class="admin-card-info">
                   <div class="admin-match-teams">
-                    <span class="admin-match-side">{{ getPlayersNames(match.teamA, 'playerID_A') }}</span>
+                    <div class="admin-match-side">
+                      <div
+                        v-for="player in getMatchSidePlayers(match.teamA, 'playerID_A', 'teamID_A')"
+                        :key="player.id"
+                        class="admin-match-player"
+                      >
+                        <span class="admin-team-badge admin-match-team-badge">{{ player.teamName }}</span>
+                        <span class="admin-match-player-name">{{ player.name }}</span>
+                      </div>
+                    </div>
                     <span class="admin-match-score">{{ match.teamA_score.value }} : {{ match.teamB_score.value }}</span>
-                    <span class="admin-match-side">{{ getPlayersNames(match.teamB, 'playerID_B') }}</span>
+                    <div class="admin-match-side admin-match-side-right">
+                      <div
+                        v-for="player in getMatchSidePlayers(match.teamB, 'playerID_B', 'teamID_B')"
+                        :key="player.id"
+                        class="admin-match-player admin-match-player-right"
+                      >
+                        <span class="admin-team-badge admin-match-team-badge">{{ player.teamName }}</span>
+                        <span class="admin-match-player-name">{{ player.name }}</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="admin-card-sub">
                     {{ formatMatchDate(match.matchDateTime.value) }}
@@ -617,7 +665,7 @@ const approveMatch = async (matchID) => {
   gap: 12px;
 }
 
-.admin-card-row > .btn {
+.admin-card-row>.btn {
   flex-shrink: 0;
   width: auto;
   min-width: 72px;
@@ -649,12 +697,44 @@ const approveMatch = async (matchID) => {
 .admin-card-sub {
   font-size: 12px;
   color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   line-height: 1.4;
 }
 
 .admin-card-dot {
-  margin: 0 4px;
+  margin: 0;
   opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.admin-team-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.admin-team-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(29, 93, 58, 0.08);
+  border: 1px solid rgba(29, 93, 58, 0.12);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.admin-team-badge-empty {
+  color: var(--color-text-muted);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .admin-match-teams {
@@ -671,6 +751,27 @@ const approveMatch = async (matchID) => {
 .admin-match-side {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.admin-match-side-right {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.admin-match-player {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.admin-match-player-right {
+  justify-content: flex-end;
 }
 
 .admin-match-score {
@@ -678,6 +779,10 @@ const approveMatch = async (matchID) => {
   font-weight: 800;
   color: var(--color-primary);
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.admin-match-team-badge {
   flex-shrink: 0;
 }
 

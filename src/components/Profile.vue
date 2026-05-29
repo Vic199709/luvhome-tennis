@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { store, playerHasUnverifiedMatches } from '../scripts/store';
+import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const user = computed(() => store.currentUser);
@@ -194,15 +194,6 @@ const latestMatchPointsChange = computed(() => {
 const currentYear = new Date().getFullYear();
 const currentQuarterStr = `Q${Math.floor(new Date().getMonth() / 3) + 1}`;
 
-// 勝負閾值：設定中最高的負方積分 + 1 即為最低勝方積分
-const maxLoseScore = computed(() => {
-  return Math.max(
-    parseInt(store.settings.weekday_lose_score) || 0,
-    parseInt(store.settings.challenge_lose_score) || 0,
-    parseInt(store.settings.finals_lose_score) || 0
-  );
-});
-
 // 取得本球隊本季 / 本年度的 history 記錄（每筆 = 一場比賽積分異動）
 const seasonTeamHistories = computed(() => {
   if (!user.value || !activeTeamId.value) return [];
@@ -231,10 +222,9 @@ const getTeamMatchStats = (histories, allUserSeasonMatches) => {
     return { doublesWins: 0, singlesWins: 0, totalWins: 0, totalMatches: 0, winRate: '0.0' };
   }
 
-  const threshold = maxLoseScore.value;
   let totalWins = 0;
   histories.forEach(h => {
-    if ((parseInt(h.pointChange?.value, 10) || 0) > threshold) totalWins++;
+    if (getWinningTeamIdsForHistory(h).includes(h.teamID?.value)) totalWins++;
   });
   const totalMatches = histories.length;
   const winRate = totalMatches > 0 ? ((totalWins / totalMatches) * 100).toFixed(1) : '0.0';
