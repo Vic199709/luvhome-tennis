@@ -104,8 +104,8 @@ const ensureViewData = async (targetView) => {
   }
 
   if (targetView === 'view-admin') {
-    if (store.members.length === 0 || store.matches.length === 0) {
-      await refreshAllData({ datasets: ['members', 'matches'] });
+    if (store.members.length === 0 || store.matches.length === 0 || store.teams.length === 0) {
+      await refreshAllData({ datasets: ['members', 'matches', 'teams'] });
     }
   }
 };

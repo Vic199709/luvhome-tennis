@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { store, showToast, API } from '../scripts/store';
+import SuccessDialog from './SuccessDialog.vue';
 
 // Settings form — sync from DB values whenever settings finish loading
 const settingsForm = ref({ ...store.settings });
@@ -11,6 +12,10 @@ watch(
 );
 
 const isSavingSettings = ref(false);
+const showSuccessDialog = ref(false);
+const successDialogTitle = ref('');
+const successDialogMessage = ref('');
+const successDialogDetails = ref([]);
 const saveSettings = async () => {
   isSavingSettings.value = true;
   try {
@@ -26,6 +31,17 @@ const saveSettings = async () => {
   } finally {
     isSavingSettings.value = false;
   }
+};
+
+const openSuccessDialog = (title, message, details = []) => {
+  successDialogTitle.value = title;
+  successDialogMessage.value = message;
+  successDialogDetails.value = details;
+  showSuccessDialog.value = true;
+};
+
+const closeSuccessDialog = () => {
+  showSuccessDialog.value = false;
 };
 
 // --- Admin password gate ---
@@ -148,6 +164,22 @@ const loadAdminMembers = async () => {
       }
     }
 
+    if (!store.teamsLoaded) {
+      try {
+        const teams = await API.getTeams();
+        if (teams) {
+          store.teams = teams.sort((a, b) => {
+            const idA = a.teamID?.value || '';
+            const idB = b.teamID?.value || '';
+            return idA.localeCompare(idB);
+          });
+          store.teamsLoaded = true;
+        }
+      } catch (err) {
+        console.error('Failed to load admin teams:', err);
+      }
+    }
+
     const mergeMembersById = (currentMembers, incomingMembers) => {
       const mergedById = new Map(currentMembers.map(member => [member.$id?.value, member]));
       incomingMembers.forEach(member => {
@@ -211,11 +243,23 @@ const verifyingMemberId = ref(null);
 const approveMember = async (id) => {
   verifyingMemberId.value = id;
   try {
+    const member = store.members.find(m => m.$id?.value === id);
     const res = await API.verifyMember(id);
     if (res.id) {
-      showToast('會員驗證成功！', 'success');
+      const teamNames = (member?.teams?.value || [])
+        .map(t => t?.value?.teamName?.value)
+        .filter(Boolean);
       store.members = store.members.filter(m => m.$id?.value !== id);
       await loadAdminMembers();
+      openSuccessDialog(
+        '會員驗證成功',
+        '已完成會員驗證。',
+        [
+          `會員姓名：${member?.playerName?.value || '未知會員'}`,
+          `手機號碼：${member?.playerPhone?.value || '未知'}`,
+          `隊伍：${teamNames.join('、') || '無隊伍'}`
+        ]
+      );
     } else {
       showToast('會員驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
     }
@@ -231,11 +275,31 @@ const verifyingMatchId = ref(null);
 const approveMatch = async (matchID) => {
   verifyingMatchId.value = matchID;
   try {
+    const match = store.matches.find(m => m.$id?.value === matchID);
     const res = await API.verifyMatch(matchID);
     if (res.success) {
-      showToast('比賽已驗證，球員積分已更新。', 'success');
+      const teamAPlayers = (match?.teamA?.value || []).map(row => {
+        const player = store.members.find(m => m.$id?.value === row.value?.playerID_A?.value);
+        const teamName = store.teams.find(t => t.teamID?.value === row.value?.teamID_A?.value || t.$id?.value === row.value?.teamID_A?.value)?.teamName?.value || '無隊伍';
+        return `${player?.playerName?.value || '未知球員'} / ${teamName}`;
+      });
+      const teamBPlayers = (match?.teamB?.value || []).map(row => {
+        const player = store.members.find(m => m.$id?.value === row.value?.playerID_B?.value);
+        const teamName = store.teams.find(t => t.teamID?.value === row.value?.teamID_B?.value || t.$id?.value === row.value?.teamID_B?.value)?.teamName?.value || '無隊伍';
+        return `${player?.playerName?.value || '未知球員'} / ${teamName}`;
+      });
       store.matches = store.matches.filter(match => match.$id?.value !== matchID);
       await loadAdminMembers();
+      openSuccessDialog(
+        '比賽驗證成功',
+        '已完成比賽驗證，球員積分已更新。',
+        [
+          `比賽編號：ID ${matchID}`,
+          `A 隊：${teamAPlayers.join('、') || '未知'}`,
+          `B 隊：${teamBPlayers.join('、') || '未知'}`,
+          `比分：${match?.teamA_score?.value || '?'} : ${match?.teamB_score?.value || '?'}`
+        ]
+      );
     } else {
       showToast('比賽驗證失敗：' + (res.error || '未知伺服器錯誤'), 'error');
     }
@@ -580,6 +644,14 @@ const approveMatch = async (matchID) => {
       </div>
     </template><!-- end v-else admin panel -->
   </div>
+  <SuccessDialog
+    v-model:open="showSuccessDialog"
+    :title="successDialogTitle"
+    :message="successDialogMessage"
+    :details="successDialogDetails"
+    confirm-text="確認"
+    @confirm="closeSuccessDialog"
+  />
 </template>
 
 <style scoped>

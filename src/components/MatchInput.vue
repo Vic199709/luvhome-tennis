@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue';
 import { store, refreshAllData, showToast, isValidTennisScore, API } from '../scripts/store';
+import SuccessDialog from './SuccessDialog.vue';
 
 const matchType = ref('weekday');
 const matchDateTimeLocal = ref('');
@@ -48,6 +49,10 @@ const scoreB = ref('4');
 const fieldErrors = ref({});
 const formErrors = ref([]);
 const isSubmitting = ref(false);
+const showSuccessDialog = ref(false);
+const successDialogMessage = ref('');
+const successDialogDetails = ref([]);
+const postSuccessAction = ref(null);
 
 const mode = computed({
   get: () => store.matchMode,
@@ -110,6 +115,24 @@ const playerB2Options = computed(() => {
 const scoreOptions = computed(() => {
   return Array.from({ length: 8 }, (_, i) => ({ value: String(i), label: String(i) }));
 });
+
+const getMemberNameById = (memberId) => {
+  const member = store.members.find(m => m.$id?.value === memberId);
+  return member ? member.playerName.value : '未知球員';
+};
+
+const getTeamNameById = (teamId) => {
+  const team = store.teams.find(t => t.teamID?.value === teamId || t.$id?.value === teamId);
+  return team ? team.teamName.value : '未知球隊';
+};
+
+const closeSuccessDialog = () => {
+  showSuccessDialog.value = false;
+  if (typeof postSuccessAction.value === 'function') {
+    postSuccessAction.value();
+  }
+  postSuccessAction.value = null;
+};
 
 
 // Set initial default for player A1 to current user and auto-select their first team
@@ -293,7 +316,22 @@ const handleMatchSubmit = async () => {
     });
 
     if (res.success) {
-      showToast('比分紀錄已成功提交審核！', 'success');
+      const submittedDateTime = matchDateTimeLocal.value;
+      const submittedMatchType = matchType.value;
+      const teamASummary = [
+        `${getMemberNameById(playerA1.value)} / ${getTeamNameById(teamA1.value)}`
+      ];
+      if (mode.value === 'doubles') {
+        teamASummary.push(`${getMemberNameById(playerA2.value)} / ${getTeamNameById(teamA2.value)}`);
+      }
+
+      const teamBSummary = [
+        `${getMemberNameById(playerB1.value)} / ${getTeamNameById(teamB1.value)}`
+      ];
+      if (mode.value === 'doubles') {
+        teamBSummary.push(`${getMemberNameById(playerB2.value)} / ${getTeamNameById(teamB2.value)}`);
+      }
+
       await refreshAllData();
 
       // Reset form fields
@@ -303,7 +341,18 @@ const handleMatchSubmit = async () => {
       playerB2.value = '';
       setDefaultDateTime();
 
-      store.currentView = 'view-profile';
+      successDialogMessage.value = '已成功提交比賽紀錄，等待管理員審核。';
+      successDialogDetails.value = [
+        `提交時間：${submittedDateTime.replace('T', ' ')}`,
+        `比賽型態：${submittedMatchType === 'weekday' ? '平日賽' : submittedMatchType === 'saturday' ? '週六挑戰賽' : '季賽 / 決賽'}`,
+        `A 隊：${teamASummary.join('、')}`,
+        `B 隊：${teamBSummary.join('、')}`,
+        `比分：${sA} : ${sB}`
+      ];
+      postSuccessAction.value = () => {
+        store.currentView = 'view-profile';
+      };
+      showSuccessDialog.value = true;
     } else {
       showToast('提交比分失敗: ' + (res.error || '未知伺服器錯誤'), 'error', handleMatchSubmit);
     }
@@ -499,4 +548,12 @@ const handleMatchSubmit = async () => {
       </form>
     </div>
   </div>
+  <SuccessDialog
+    v-model:open="showSuccessDialog"
+    title="比分提交成功"
+    :message="successDialogMessage"
+    :details="successDialogDetails"
+    confirm-text="確認"
+    @confirm="closeSuccessDialog"
+  />
 </template>

@@ -2,6 +2,7 @@
 import { ref, nextTick, computed } from 'vue';
 import { store, refreshAllData, showToast, API } from '../scripts/store';
 import ModalSelect from './ModalSelect.vue';
+import SuccessDialog from './SuccessDialog.vue';
 
 const memberName = ref('');
 const memberPhone = ref('');
@@ -17,6 +18,10 @@ const memberBirthday = ref('');
 const fieldErrors = ref({});
 const formErrors = ref([]);
 const isSubmitting = ref(false);
+const showSuccessDialog = ref(false);
+const successDialogMessage = ref('');
+const successDialogDetails = ref([]);
+const postSuccessAction = ref(null);
 
 const normalizePhone = (phone) => phone.replace(/\s+/g, '');
 
@@ -30,6 +35,20 @@ const loadAllMembersIfNeeded = async () => {
 const teamOptions = computed(() => {
   return store.teams.map(t => ({ value: t.$id.value, label: t.teamName.value }));
 });
+
+const getSelectedTeamNames = () => {
+  return checkedTeams.value
+    .map(tId => store.teams.find(teamObj => teamObj.$id.value === tId)?.teamName?.value)
+    .filter(Boolean);
+};
+
+const closeSuccessDialog = () => {
+  showSuccessDialog.value = false;
+  if (typeof postSuccessAction.value === 'function') {
+    postSuccessAction.value();
+  }
+  postSuccessAction.value = null;
+};
 
 const handleRegisterSubmit = async () => {
   fieldErrors.value = {};
@@ -110,7 +129,9 @@ const handleRegisterSubmit = async () => {
     const res = await API.addMember(record);
 
     if (res.id) {
-      showToast('會員已送出審核，帳號目前為【未驗證】狀態。', 'success');
+      const submittedTeamNames = getSelectedTeamNames();
+      const submittedGender = memberGender.value;
+      const submittedBirthday = memberBirthday.value;
 
       // Reset form
       memberName.value = '';
@@ -121,11 +142,22 @@ const handleRegisterSubmit = async () => {
 
       await refreshAllData();
 
-      if (!store.currentUser) {
-        store.currentView = 'view-login';
-      } else {
-        store.currentView = 'view-profile';
-      }
+      successDialogMessage.value = '已成功提交新增會員申請。';
+      successDialogDetails.value = [
+        `會員姓名：${trimName}`,
+        `手機號碼：${trimPhone}`,
+        `性別：${submittedGender || '未填'}`,
+        `隊伍：${submittedTeamNames.join('、') || '無隊伍'}`,
+        `生日：${submittedBirthday || '未填'}`
+      ];
+      postSuccessAction.value = () => {
+        if (!store.currentUser) {
+          store.currentView = 'view-login';
+        } else {
+          store.currentView = 'view-profile';
+        }
+      };
+      showSuccessDialog.value = true;
     } else {
       showToast('新增會員失敗：' + (res.error || '未知伺服器錯誤'), 'error', handleRegisterSubmit);
     }
@@ -239,4 +271,12 @@ const handleRegisterSubmit = async () => {
       </form>
     </div>
   </div>
+  <SuccessDialog
+    v-model:open="showSuccessDialog"
+    title="新增會員成功"
+    :message="successDialogMessage"
+    :details="successDialogDetails"
+    confirm-text="確認"
+    @confirm="closeSuccessDialog"
+  />
 </template>
