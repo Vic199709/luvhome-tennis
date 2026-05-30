@@ -809,9 +809,16 @@ body {
 }
 
 .asterisk-red {
-  color: var(--color-danger);
-  font-weight: 900;
-  font-size: 16px;
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff4d4d, #c0003c);
+  box-shadow: 0 0 4px rgba(192, 0, 60, 0.45);
+  vertical-align: middle;
+  margin-left: 3px;
+  flex-shrink: 0;
+  font-size: 0;
   line-height: 1;
   display: inline-block;
 }

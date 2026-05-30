@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue';
-import { store, refreshAllData, refreshRankingData, showToast, isValidTennisScore, API } from '../scripts/store';
+import { store, refreshAllData, showToast, isValidTennisScore, API } from '../scripts/store';
 import SuccessDialog from './SuccessDialog.vue';
 
 const matchType = ref('weekday');
@@ -333,7 +333,6 @@ const handleMatchSubmit = async () => {
       }
 
       await refreshAllData();
-      await refreshRankingData();
 
       // Reset form fields
       playerA1.value = '';

@@ -49,12 +49,10 @@ const rankingQuarterOptions = computed(() => {
   return options;
 });
 
-// Reset team filter when tab changes, and force-refresh on team tab entry
+// Reset team filter when tab changes, and force-refresh on every tab entry
 watch(currentTab, async (newTab) => {
   selectedTeamFilter.value = 'all';
-  if (newTab === 'team') {
-    await refreshRankingData();
-  }
+  await refreshRankingData();
 });
 
 // Reset quarter and fetch year-specific history when year changes
@@ -301,12 +299,12 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded);
             <div class="sheet-body">
               <div style="display: flex; flex-direction: column; gap: 12px; padding: 8px 0;">
                 <div class="legend-row">
-                  <span class="legend-example">王小明 <span class="asterisk-red">*</span></span>
-                  <span class="legend-desc">球員名稱旁的 <span class="asterisk-red">*</span> 表示該球員帳號<strong>尚未完成驗證</strong>，積分僅供參考。</span>
+                  <span class="legend-example">王小明 <span class="asterisk-red"></span></span>
+                  <span class="legend-desc">球員名稱旁的紅點表示該球員帳號<strong>尚未完成驗證</strong>，積分僅供參考。</span>
                 </div>
                 <div class="legend-row">
-                  <span class="legend-example">42 <span class="asterisk-red">*</span></span>
-                  <span class="legend-desc">積分旁的 <span class="asterisk-red">*</span> 表示該球員有<strong>尚未核准的比賽</strong>，積分可能異動。</span>
+                  <span class="legend-example">42 <span class="asterisk-red"></span></span>
+                  <span class="legend-desc">積分旁的紅點表示該球員有<strong>尚未核准的比賽</strong>，積分可能異動。</span>
                 </div>
               </div>
             </div>
@@ -375,7 +373,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded);
           <div class="ranking-details">
             <div class="ranking-name">
               {{ player.playerName }}
-              <span v-if="player.isVerified === 'false'" class="asterisk-red" title="球員尚未完成驗證">*</span>
+              <span v-if="player.isVerified === 'false'" class="asterisk-red" title="球員尚未完成驗證"></span>
             </div>
             <div class="ranking-team">
               {{ player.teamName }}
@@ -384,7 +382,7 @@ watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded);
           <div class="ranking-score-box">
             <div class="ranking-score">
               {{ player.score }}
-              <span v-if="playerHasUnverifiedMatches(player.playerID)" class="asterisk-red" title="含有未驗證比賽">*</span>
+              <span v-if="playerHasUnverifiedMatches(player.playerID)" class="asterisk-red" title="含有未驗證比賽"></span>
             </div>
             <div class="ranking-matches"> 勝場 {{ player.winCount }} </div>
           </div>

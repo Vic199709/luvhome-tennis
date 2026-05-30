@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Netlify Dev (Astro + Functions)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["netlify", "dev"],
+      "port": 8888,
+      "autoPort": true
+    },
+    {
+      "name": "Astro Dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 4321,
+      "autoPort": true
+    },
+    {
+      "name": "Functions Server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["functions-server.mjs"],
+      "port": 8889,
+      "autoPort": true
+    }
+  ]
+}

@@ -470,7 +470,7 @@ const getPlayerNameAtRank = (rank) => {
           <span class="profile-stat-label">目前積分</span>
           <span class="profile-stat-value">
             {{ displayScore }}
-            <span v-if="hasPending" class="asterisk-red" title="包含未審核比賽">*</span>
+            <span v-if="hasPending" class="asterisk-red" title="包含未審核比賽"></span>
           </span>
         </div>
       </div>
@@ -707,7 +707,7 @@ const getPlayerNameAtRank = (rank) => {
                 <span>{{ playersAName }}</span>
                 <span class="match-score-bold">
                   {{ latestMatchScoreStr }}
-                  <span v-if="latestMatchIsUnverified" class="asterisk-red" title="比分審核中">*</span>
+                  <span v-if="latestMatchIsUnverified" class="asterisk-red" title="比分審核中"></span>
                 </span>
                 <span>{{ playersBName }}</span>
               </div>
