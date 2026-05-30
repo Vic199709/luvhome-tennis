@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { store, showToast, API } from '../scripts/store';
+import { store, showToast, API, refreshRankingData } from '../scripts/store';
 import SuccessDialog from './SuccessDialog.vue';
 
 // Settings form — sync from DB values whenever settings finish loading
@@ -288,7 +288,7 @@ const approveMatch = async (matchID) => {
         const teamName = store.teams.find(t => t.teamID?.value === row.value?.teamID_B?.value || t.$id?.value === row.value?.teamID_B?.value)?.teamName?.value || '無隊伍';
         return `${player?.playerName?.value || '未知球員'} / ${teamName}`;
       });
-      store.matches = store.matches.filter(match => match.$id?.value !== matchID);
+      await refreshRankingData();
       await loadAdminMembers();
       openSuccessDialog(
         '比賽驗證成功',

@@ -316,6 +316,46 @@ export async function refreshAllData(options = {}) {
   }
 }
 
+// Force-refresh the data needed by ranking calculations.
+export async function refreshRankingData() {
+  try {
+    store.isLoading = true;
+
+    const requests = [
+      API.getMembers().then(res => {
+        store.members = res || [];
+        store.allMembersLoaded = true;
+      }),
+      API.getHistory().then(res => {
+        store.history = res || [];
+        store.allHistoryLoaded = true;
+      })
+    ];
+
+    if (!store.teamsLoaded) {
+      requests.push(
+        API.getTeams().then(res => {
+          if (res) {
+            store.teams = res.sort((a, b) => {
+              const idA = a.teamID?.value || '';
+              const idB = b.teamID?.value || '';
+              return idA.localeCompare(idB);
+            });
+            store.teamsLoaded = true;
+          }
+        })
+      );
+    }
+
+    await Promise.all(requests);
+  } catch (error) {
+    console.error('Failed to refresh ranking data:', error);
+    throw error;
+  } finally {
+    store.isLoading = false;
+  }
+}
+
 // Check if a player has any unverified matches in their history
 export function playerHasUnverifiedMatches(playerId) {
   return store.matches.some(match => {

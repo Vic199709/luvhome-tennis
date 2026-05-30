@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { store, refreshAllData, resetUserSession, showToast, removeToast, API, loadSession } from '../scripts/store';
+import { store, refreshAllData, refreshRankingData, resetUserSession, showToast, removeToast, API, loadSession } from '../scripts/store';
 
 // Import child views
 import Header from './Header.vue';
@@ -97,9 +97,7 @@ const ensureViewData = async (targetView) => {
   }
 
   if (targetView === 'view-ranking') {
-    if (store.teams.length === 0) {
-      await refreshAllData({ datasets: ['teams'] });
-    }
+    await refreshRankingData();
     return;
   }
 

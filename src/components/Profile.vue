@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory } from '../scripts/store';
+import { computed, onMounted, ref, watch } from 'vue';
+import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory, refreshRankingData } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const user = computed(() => store.currentUser);
@@ -39,6 +39,10 @@ watch(userTeams, (newTeams) => {
     store.activeTeamId = newTeams[0].value?.teamID?.value;
   }
 }, { immediate: true });
+
+onMounted(async () => {
+  await refreshRankingData();
+});
 
 // 1. Stats Calculations
 const personalRank = computed(() => {
@@ -314,10 +318,14 @@ const activeTeamRankings = computed(() => {
       return sum + (parseInt(h.pointChange?.value, 10) || 0);
     }, 0);
 
+    const matchCount = playerTeamHistories.length;
+    if (matchCount === 0) return;
+
     list.push({
       playerID: member.$id?.value,
       playerName: member.playerName?.value || '',
-      score: score
+      score,
+      matchCount
     });
   });
 

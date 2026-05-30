@@ -1,6 +1,6 @@
 ﻿<script setup>
 import { ref, computed, watch } from 'vue';
-import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory, API } from '../scripts/store';
+import { store, playerHasUnverifiedMatches, getWinningTeamIdsForHistory, API, refreshRankingData } from '../scripts/store';
 import multiavatar from '@multiavatar/multiavatar';
 
 const currentTab = ref('individual'); // 'individual' or 'team'
@@ -28,7 +28,7 @@ const START_YEAR = 2025;
 
 const rankingYearOptions = computed(() => {
   const currentYear = new Date().getFullYear();
-  const options = [{ value: 'all', label: '全部年度' }];
+  const options = [];
   for (let y = currentYear; y >= START_YEAR; y--) {
     options.push({ value: String(y), label: `${y} 年` });
   }
@@ -49,9 +49,12 @@ const rankingQuarterOptions = computed(() => {
   return options;
 });
 
-// Reset team filter when tab changes
-watch(currentTab, () => {
+// Reset team filter when tab changes, and force-refresh on team tab entry
+watch(currentTab, async (newTab) => {
   selectedTeamFilter.value = 'all';
+  if (newTab === 'team') {
+    await refreshRankingData();
+  }
 });
 
 // Reset quarter and fetch year-specific history when year changes
@@ -256,7 +259,7 @@ watch(selectedTeamFilter, async (newTeamId) => {
   }
 });
 
-watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded, { immediate: true });
+watch([currentTab, selectedTeamFilter], loadAllDataIfNeeded);
 </script>
 
 <template>
