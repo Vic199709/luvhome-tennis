@@ -274,8 +274,11 @@ body {
 }
 
 .login-logo {
-  font-size: 64px;
+  width: 72px;
+  height: 72px;
   margin-bottom: 16px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(29, 93, 58, 0.22);
   animation: bounce 2s infinite;
 }
 

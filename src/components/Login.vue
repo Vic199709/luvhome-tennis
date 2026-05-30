@@ -73,7 +73,7 @@ const goToRegister = (e) => {
 
 <template>
   <div class="login-container">
-    <div class="login-logo">🎾</div>
+    <img src="/icon-192.png" class="login-logo" alt="網球聯盟" />
     <h1 class="login-title">網球聯盟會員登入</h1>
     <p class="login-subtitle">請輸入您的手機號碼以驗證會員身份</p>
     
